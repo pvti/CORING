@@ -2,6 +2,7 @@ from tqdm.auto import tqdm
 import logging
 import os
 import argparse
+import numpy as np
 
 from data import *
 from helpers import *
@@ -24,7 +25,7 @@ def get_parser():
     parser.add_argument(
         "--prune_ratio",
         type=float,
-        default=0.2,
+        default=0.9,
         help="Prune ratio",
     )
     parser.add_argument(
@@ -52,7 +53,7 @@ def get_model_performance(model, dataloader):
     model = model.to('cpu')
     latency = round(measure_latency(model, dummy_input) * 1000, 1) #in ms
     macs = round(get_model_macs(model, dummy_input) / 1e6) #in million
-    num_params = round(get_num_parameters(model)/ 1e6, 2)
+    num_params = round(get_num_parameters(model)/ 1e6, 2) #in million
     model = model.to('cuda')
 
     return accuracy, size, latency, macs, num_params
@@ -76,7 +77,8 @@ def finetune(epochs: int,
 
 if __name__ == "__main__":
     args = get_parser().parse_args()
-    logging.basicConfig(filename=args.log_file, encoding='utf-8', level=logging.DEBUG)
+    logging.basicConfig(filename=args.log_file,
+                        encoding='utf-8', level=logging.DEBUG)
     logging.info("Arguments: " + str(args))
 
     CIFAR10_dataset = DataLoaderCIFAR10()
@@ -91,18 +93,25 @@ if __name__ == "__main__":
         #recover_model = lambda: model.load_state_dict(checkpoint['state_dict'])
 
         logging.info("Baseline model performance:")
+        logging.info("accuracy (%), size (Mb), latency (ms), macs (M), num_params (M)")
         logging.info(get_model_performance(model, dataloader))
 
-        channel_pruning_ratios = [0.1, 0.2, 0.3, 0.4]  # pruned-out ratio
-        criterias = ['random', 'L0_norm', 'L1_norm', 'L2_norm', 'inf_norm','SNR', 'cos', 'EDistance']
+        channel_pruning_ratios = np.around(np.arange(0.05, args.prune_ratio+0.01, 0.05), 2)
+        criterias = ['random', 'L0_norm', 'L1_norm', 'L2_norm', 'inf_norm',
+                     'SNR', 'cos', 'EDistance']
+        pruned_accuracy = {c : [] for c in criterias}
+        finetuned_best_acc = {c : [] for c in criterias}
         num_finetune_epochs = args.num_finetune_epochs
         for channel_pruning_ratio in channel_pruning_ratios:
-            logging.info(f"-----Current channel_pruning_ratio-----{channel_pruning_ratio}")
+            logging.debug(
+                f"-----Current channel_pruning_ratio-----{channel_pruning_ratio}")
             for criteria in criterias:
                 sorted_model = apply_channel_sorting(model, criteria)
                 pruned_model = channel_prune(sorted_model, channel_pruning_ratio)
                 pruned_model_accuracy = evaluate(pruned_model, dataloader['test'])
                 logging.info(f"{criteria}, accuracy = {pruned_model_accuracy:.2f}%")
+                pruned_accuracy[criteria].append(round((pruned_model_accuracy), 2))
+
                 #finetune then save
                 optimizer = torch.optim.SGD(pruned_model.parameters(), lr=0.01,
                                         momentum=0.9, weight_decay=1e-4)
@@ -112,11 +121,16 @@ if __name__ == "__main__":
                 finetuned_model, finetuned_model_best_acc = finetune(
                     num_finetune_epochs, pruned_model,
                     dataloader, criterion, optimizer, scheduler)
-                logging.info(f"finetuned_model_best_acc = {finetuned_model_best_acc:.2f}%")
-                path_save_model = os.path.join(
-                args.output_pruned, f"{criteria}_{channel_pruning_ratio}.pth")
+                finetuned_best_acc[criteria].append(round((finetuned_model_best_acc), 2))
+                '''
+                path_save_model = os.path.join(args.output_pruned,
+                                               f"{criteria}_{channel_pruning_ratio}.pth")
                 torch.save(finetuned_model.state_dict(), path_save_model)
+                '''
                 logging.info(get_model_performance(finetuned_model, dataloader))
+
+        logging.info(pruned_accuracy)
+        logging.info(finetuned_best_acc)
     else:
         logging.warning("Missing input baseline model")
         #train model in other process

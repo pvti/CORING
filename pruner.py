@@ -63,7 +63,7 @@ def signal_to_noise_ratio(signal, noise):
     """Caculate signal to noise ratio
     """
 
-    return snr(torch.flatten(signal), torch.flatten(noise))
+    return snr(signal, noise)
 
 def EuclideDistance(a, b):
     """Caculate Euclide distance
@@ -138,7 +138,7 @@ def get_input_channel_saliency_by_norm(weight, criteria):
         for i_c in range(in_channels):
             channel_weight = weight.detach()[:, i_c]
             saliency = torch.linalg.vector_norm(torch.flatten(channel_weight),
-                                                float(‘inf’))
+                                                float('inf'))
             saliencies.append(saliency.view(1))
 
     return saliencies
