@@ -1,65 +1,192 @@
+'''Train CIFAR10'''
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+import torch.backends.cudnn as cudnn
+from torch.optim import *
+from torch.optim.lr_scheduler import *
+
 import logging
 import os
 import argparse
 import numpy as np
+from tqdm.auto import tqdm
 
 from data import *
-from model import *
+from models import *
+from utils import progress_bar
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Train model")
-    parser.add_argument(
-        "--checkpoint",
-        metavar="FILE",
-        help="path to load baseline model file",
-    )
-    parser.add_argument(
-        "--output",
-        default="model/baseline/vgg/model.pth",
-        help="path to save model file",
-    )
-
-    parser.add_argument(
-        "--num_epochs",
-        type=int,
-        default=5,
-        help="Number of training epochs",
-    )
-    parser.add_argument(
-        "--log_file",
-        default="./log_train.txt",
-        help="path to log file",
-    )
+    parser.add_argument("--net",
+                        default="VGG19",
+                        help="network type",
+                        )
+    parser.add_argument("--lr",
+                        default=0.1,
+                        type=float,
+                        help="learning rate")
+    parser.add_argument("--resume",
+                        "-r",
+                        action="store_true",
+                        help="resume from checkpoint",
+                        )
+    parser.add_argument("--checkpoint",
+                        metavar="FILE",
+                        help="path to load checkpoint",
+                        )
+    parser.add_argument("--output",
+                        default="checkpoint/baseline/vgg/ckpt.pth",
+                        help="path to save checkpoint",
+                        )
+    parser.add_argument("--num_epochs",
+                        default=200,
+                        type=int,
+                        help="Number of training epochs",
+                        )
+    parser.add_argument("--log_file",
+                        default="./log_train.txt",
+                        help="path to log file",
+                        )
 
     return parser
 
+def train(net: nn.Module,
+          dataloader: DataLoader,
+          criterion: nn.Module,
+          optimizer: Optimizer,
+          scheduler: LambdaLR,
+          device: str,
+          callbacks = None
+          ) -> None:
+    net.train() #sets the mode to train
+    train_loss = 0
+    correct = 0
+    total = 0
+    for batch_idx, (inputs, targets) in enumerate(dataloader):
+        inputs = inputs.to(device)
+        targets = targets.to(device)
+        optimizer.zero_grad()
+        outputs = net(inputs)
+        loss = criterion(outputs, targets)
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
+
+        train_loss += loss.item()
+        _, predicted = outputs.max(1)
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
+
+        progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                     % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+
+        if callbacks is not None:
+            for callback in callbacks:
+                callback()
+
+@torch.inference_mode()
+def evaluate(net: nn.Module,
+             dataloader: DataLoader,
+             criterion: nn.Module,
+             device: str,
+             verbose=True,
+             ) -> float:
+    net.eval() #sets the mode to evaluate
+
+    test_loss = 0
+    correct = 0
+    total = 0
+
+    for batch_idx, (inputs, targets) in enumerate(dataloader):
+        inputs, targets = inputs.to(device), targets.to(device)
+        outputs = net(inputs)
+        loss = criterion(outputs, targets)
+
+        test_loss += loss.item()
+        _, predicted = outputs.max(1)
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
+
+        progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                     % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+
+    return (correct / total * 100)
+
+
 if __name__ == "__main__":
     args = get_parser().parse_args()
-    logging.basicConfig(filename=args.log_file,
-                        encoding='utf-8', level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s [%(levelname)s] %(message)s",
+                        handlers=[logging.FileHandler(args.log_file),
+                                  logging.StreamHandler()
+                                  ]
+                        )
     logging.info("Arguments: " + str(args))
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    best_acc = 0
+    start_epoch = 0
+    net = None
+    if args.net == "ResNet18":
+        net = ResNet18()
+    elif 'VGG' in args.net:
+        net = VGG(args.net)
+    else:
+        net = VGG('VGG19')
+    net = net.to(device)
+    '''
+    if device == 'cuda':
+        net = torch.nn.DataParallel(net)
+        cudnn.benchmark = True
+    '''
 
-    model = VGG().cuda()
-    if args.checkpoint:
-        checkpoint = torch.load(args.checkpoint, map_location="cpu")
-        model.load_state_dict(checkpoint['state_dict'])
+    if args.resume:
+        assert os.path.isfile(args.checkpoint), "Checkpoint not found!"
+        checkpoint = torch.load(args.checkpoint)
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
 
     CIFAR10_dataset = DataLoaderCIFAR10()
     dataloader = CIFAR10_dataset.dataloader
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = SGD(model.parameters(), lr=0.4, momentum=0.9, weight_decay=5e-4,)
+    optimizer = optim.SGD(net.parameters(),
+                          lr=args.lr,
+                          momentum=0.9,
+                          weight_decay=5e-4,
+                          )
     num_epochs = args.num_epochs
     steps_per_epoch = len(dataloader["train"])
     # Define the piecewise linear scheduler
     lr_lambda = lambda step: np.interp([step / steps_per_epoch],
                                        [0, num_epochs * 0.3, num_epochs],
-                                       [0, 1, 0])[0]
+                                       [0, 1, 0]
+                                       )[0]
     scheduler = LambdaLR(optimizer, lr_lambda)
 
-    for epoch_num in tqdm(range(1, num_epochs + 1)):
-        train(model, dataloader["train"], criterion, optimizer, scheduler)
-        metric = evaluate(model, dataloader["test"])
-        logging.info(f"epoch {epoch_num}:, {metric}")
+    for epoch in tqdm(range(start_epoch, start_epoch + num_epochs)):
+        train(net,
+              dataloader["train"],
+              criterion,
+              optimizer,
+              scheduler,
+              device
+              )
+        acc = evaluate(net,
+                       dataloader["test"],
+                       criterion,
+                       device
+                       )
+        logging.info(f"epoch {epoch}:, {round(acc, 2)}")
 
-    torch.save(model.state_dict(), args.output)
+        #save checkpoint if acc > best_acc
+        if acc > best_acc:
+            logging.info("Saving network state ...")
+            state = {'net': net.state_dict(),
+                     'acc': acc,
+                     'epoch': epoch,
+                     }
+            torch.save(state, args.output)
+            best_acc = acc
