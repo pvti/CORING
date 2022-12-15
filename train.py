@@ -17,6 +17,7 @@ from data import *
 from models import *
 from utils import progress_bar
 
+
 def get_parser():
     parser = argparse.ArgumentParser(description="Train model")
     parser.add_argument("--net",
@@ -52,15 +53,16 @@ def get_parser():
 
     return parser
 
+
 def train(net: nn.Module,
           dataloader: DataLoader,
           criterion: nn.Module,
           optimizer: Optimizer,
           scheduler: LambdaLR,
           device: str,
-          callbacks = None
+          callbacks=None
           ) -> None:
-    net.train() #sets the mode to train
+    net.train()  # sets the mode to train
     train_loss = 0
     correct = 0
     total = 0
@@ -86,6 +88,7 @@ def train(net: nn.Module,
             for callback in callbacks:
                 callback()
 
+
 @torch.inference_mode()
 def evaluate(net: nn.Module,
              dataloader: DataLoader,
@@ -93,7 +96,7 @@ def evaluate(net: nn.Module,
              device: str,
              verbose=True,
              ) -> float:
-    net.eval() #sets the mode to evaluate
+    net.eval()  # sets the mode to evaluate
 
     test_loss = 0
     correct = 0
@@ -160,10 +163,11 @@ if __name__ == "__main__":
     num_epochs = args.num_epochs
     steps_per_epoch = len(dataloader["train"])
     # Define the piecewise linear scheduler
-    lr_lambda = lambda step: np.interp([step / steps_per_epoch],
-                                       [0, num_epochs * 0.3, num_epochs],
-                                       [0, 1, 0]
-                                       )[0]
+
+    def lr_lambda(step): return np.interp([step / steps_per_epoch],
+                                          [0, num_epochs * 0.3, num_epochs],
+                                          [0, 1, 0]
+                                          )[0]
     scheduler = LambdaLR(optimizer, lr_lambda)
 
     for epoch in tqdm(range(start_epoch, start_epoch + num_epochs)):
@@ -181,7 +185,7 @@ if __name__ == "__main__":
                        )
         logging.info(f"epoch {epoch}:, {round(acc, 2)}")
 
-        #save checkpoint if acc > best_acc
+        # save checkpoint if acc > best_acc
         if acc > best_acc:
             logging.info("Saving network state ...")
             state = {'net': net.state_dict(),

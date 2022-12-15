@@ -11,9 +11,9 @@ from models import *
 from pruner import channel_prune, apply_channel_sorting
 from train import train, evaluate
 
+
 def get_parser():
-    parser = argparse.ArgumentParser(description=
-                                     "Filter pruning through SNR"
+    parser = argparse.ArgumentParser(description="Filter pruning through SNR"
                                      )
     parser.add_argument("--net",
                         default="VGG19",
@@ -54,6 +54,7 @@ def get_parser():
 
     return parser
 
+
 def get_model_performance(model, dataloader, criterion):
     """Caculate model's performance
     """
@@ -63,15 +64,16 @@ def get_model_performance(model, dataloader, criterion):
                               'cuda'), 2)
     size = round(get_model_size(model) / MiB, 2)
 
-    #measure on cpu to simulate inference on an edge device
+    # measure on cpu to simulate inference on an edge device
     dummy_input = torch.randn(1, 3, 32, 32).to('cpu')
     model = model.to('cpu')
-    latency = round(measure_latency(model, dummy_input) * 1000, 1) #in ms
-    macs = round(get_model_macs(model, dummy_input) / 1e6) #in million
-    num_params = round(get_num_parameters(model)/ 1e6, 2) #in million
+    latency = round(measure_latency(model, dummy_input) * 1000, 1)  # in ms
+    macs = round(get_model_macs(model, dummy_input) / 1e6)  # in million
+    num_params = round(get_num_parameters(model) / 1e6, 2)  # in million
     model = model.to('cuda')
 
     return accuracy, size, latency, macs, num_params
+
 
 if __name__ == "__main__":
     args = get_parser().parse_args()
@@ -98,23 +100,23 @@ if __name__ == "__main__":
         net = VGG(args.net)
     else:
         net = VGG('VGG19')
-    net = net.to(device)    
+    net = net.to(device)
 
     if args.resume:
         assert os.path.isfile(args.checkpoint), "Checkpoint not found!"
         logging.info(f"=> loading checkpoint '{args.checkpoint}'")
         checkpoint = torch.load(args.checkpoint)
-        #load net without DataParallel
+        # load net without DataParallel
         net_state_dict = OrderedDict()
         for k, v in checkpoint['net'].items():
-            name = k[7:] # remove `module.`
+            name = k[7:]  # remove `module.`
             net_state_dict[name] = v
         net.load_state_dict(net_state_dict)
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
 
-    logging.info("Baseline model performance: \n" + 
-        "accuracy (%), size (Mb), latency (ms), macs (M), num_params (M)"
+    logging.info("Baseline model performance: \n" +
+                 "accuracy (%), size (Mb), latency (ms), macs (M), num_params (M)"
                  )
     logging.info(get_model_performance(net, dataloader, criterion))
 
@@ -122,11 +124,15 @@ if __name__ == "__main__":
                                                  args.prune_ratio+0.01,
                                                  0.05),
                                        2)
+
     criterias = ['random',
                  'L0_norm', 'L1_norm', 'L2_norm', 'inf_norm',
-                 'SNR', 'cos', 'EDistance']
-    pruned_accuracy_dict = {c : [] for c in criterias}
-    finetuned_best_acc_dict = {c : [] for c in criterias}
+                 'cosine_sim', 'Pearson_sim',
+                 'Euclide_dis', 'Manhattan_dis', 'SNR_dis'
+                 ]
+
+    pruned_accuracy_dict = {c: [] for c in criterias}
+    finetuned_best_acc_dict = {c: [] for c in criterias}
     num_finetune_epochs = args.num_finetune_epochs
     for criteria in criterias:
         logging.info(f"---------------criteria--------------- {criteria}")
@@ -144,7 +150,7 @@ if __name__ == "__main__":
             pruned_accuracy_dict[criteria].append(
                 round((pruned_net_accuracy), 2))
 
-            #finetune then save
+            # finetune then save
             optimizer = torch.optim.SGD(pruned_net.parameters(),
                                         lr=args.lr,
                                         momentum=0.9,
@@ -153,7 +159,7 @@ if __name__ == "__main__":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer,
                 args.num_finetune_epochs
-                )
+            )
 
             finetuned_best_accuracy = 0
             for epoch in range(start_epoch,
@@ -170,7 +176,7 @@ if __name__ == "__main__":
                                criterion,
                                device)
 
-                #save checkpoint if acc > best_acc
+                # save checkpoint if acc > best_acc
                 if acc > finetuned_best_accuracy:
                     state = {'net': net.state_dict(),
                              'acc': acc,
@@ -179,7 +185,7 @@ if __name__ == "__main__":
                     path_save_net = os.path.join(
                         args.output,
                         f"{criteria}_{channel_pruning_ratio}.pth"
-                        )
+                    )
                     torch.save(state, path_save_net)
                     finetuned_best_accuracy = acc
 

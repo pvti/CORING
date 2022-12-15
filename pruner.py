@@ -2,11 +2,9 @@ import copy
 import torch
 from torch import nn
 from typing import Union, List
-from torchmetrics import SignalNoiseRatio
 import numpy as np
+from similarity import *
 
-snr = SignalNoiseRatio().to(0)
-cos = torch.nn.CosineSimilarity(dim=0)
 
 def get_num_channels_to_keep(channels: int, prune_ratio: float) -> int:
     """A function to calculate the number of layers to PRESERVE after pruning
@@ -14,6 +12,7 @@ def get_num_channels_to_keep(channels: int, prune_ratio: float) -> int:
     """
 
     return int(round(channels * (1. - prune_ratio)))
+
 
 @torch.no_grad()
 def channel_prune(model: nn.Module,
@@ -59,23 +58,6 @@ def channel_prune(model: nn.Module,
 
     return model
 
-def signal_to_noise_ratio(signal, noise):
-    """Caculate signal to noise ratio
-    """
-
-    return snr(signal, noise)
-
-def EuclideDistance(a, b):
-    """Caculate Euclide distance
-    """
-
-    return torch.dist(a, b)
-
-def cosineSimilarity(a, b):
-    """Caculate cosine similarity
-    """
-
-    return cos(torch.flatten(a), torch.flatten(b))
 
 def get_input_channel_similarity(weight, criteria):
     """Caculate correlation matrix between channels in inter-layer
@@ -84,32 +66,53 @@ def get_input_channel_similarity(weight, criteria):
     correlation_matrix = torch.zeros(in_channels, in_channels,
                                      device=torch.device('cuda'))
 
-    # compute the similarity for each channel pair based on criteria
-    if criteria == 'SNR':
-      for ic in range(in_channels):
-        for jc in range(in_channels):
-          channel_weight_ic = weight.detach()[:, ic]
-          channel_weight_jc = weight.detach()[:, jc]
-          correlation_matrix[ic, jc] = signal_to_noise_ratio(channel_weight_ic,
-                                                             channel_weight_jc)
-    elif criteria == 'cos':
-            for ic in range(in_channels-1):
-              for jc in range(in_channels):
+    # compute the channel pairwise similarity based on criteria
+    if criteria == 'cosine_sim':
+        for ic in range(in_channels-1):
+            for jc in range(ic+1, in_channels):
                 channel_weight_ic = weight.detach()[:, ic]
                 channel_weight_jc = weight.detach()[:, jc]
-                correlation_matrix[ic, jc] = cosineSimilarity(channel_weight_ic,
-                                                              channel_weight_jc)
-        # default: Euclide distance
-    else:
-      for ic in range(in_channels-1):
-        for jc in range(ic+1, in_channels):
-          channel_weight_ic = weight.detach()[:, ic]
-          channel_weight_jc = weight.detach()[:, jc]
-          correlation_matrix[ic, jc] = EuclideDistance(channel_weight_ic,
+                correlation_matrix[ic, jc] = cosine(channel_weight_ic,
+                                                    channel_weight_jc)
+                correlation_matrix[jc, ic] = correlation_matrix[ic, jc]
+
+    elif criteria == 'Euclide_dis':
+        for ic in range(in_channels-1):
+            for jc in range(ic+1, in_channels):
+                channel_weight_ic = weight.detach()[:, ic]
+                channel_weight_jc = weight.detach()[:, jc]
+                correlation_matrix[ic, jc] = Euclide(channel_weight_ic,
+                                                     channel_weight_jc)
+                correlation_matrix[jc, ic] = correlation_matrix[ic, jc]
+
+    elif criteria == 'Manhattan_dis':
+        for ic in range(in_channels-1):
+            for jc in range(ic+1, in_channels):
+                channel_weight_ic = weight.detach()[:, ic]
+                channel_weight_jc = weight.detach()[:, jc]
+                correlation_matrix[ic, jc] = Manhattan(channel_weight_ic,
                                                        channel_weight_jc)
-          correlation_matrix[jc, ic] = correlation_matrix[ic, jc]
+                correlation_matrix[jc, ic] = correlation_matrix[ic, jc]
+
+    elif criteria == 'Pearson_sim':
+        for ic in range(in_channels-1):
+            for jc in range(ic+1, in_channels):
+                channel_weight_ic = weight.detach()[:, ic]
+                channel_weight_jc = weight.detach()[:, jc]
+                correlation_matrix[ic, jc] = Pearson(channel_weight_ic,
+                                                     channel_weight_jc)
+                correlation_matrix[jc, ic] = correlation_matrix[ic, jc]
+
+    elif criteria == 'SNR_dis':
+        for ic in range(in_channels):
+            for jc in range(in_channels):
+                channel_weight_ic = weight.detach()[:, ic]
+                channel_weight_jc = weight.detach()[:, jc]
+                correlation_matrix[ic, jc] = SNR(channel_weight_ic,
+                                                 channel_weight_jc)
 
     return correlation_matrix
+
 
 def get_input_channel_saliency_by_norm(weight, criteria):
     in_channels = weight.shape[1]
@@ -119,13 +122,15 @@ def get_input_channel_saliency_by_norm(weight, criteria):
     if (criteria == 'L0_norm'):
         for i_c in range(in_channels):
             channel_weight = weight.detach()[:, i_c]
-            saliency = torch.linalg.vector_norm(torch.flatten(channel_weight), 0)
+            saliency = torch.linalg.vector_norm(
+                torch.flatten(channel_weight), 0)
             saliencies.append(saliency.view(1))
 
     elif (criteria == 'L1_norm'):
         for i_c in range(in_channels):
             channel_weight = weight.detach()[:, i_c]
-            saliency = torch.linalg.vector_norm(torch.flatten(channel_weight), 1)
+            saliency = torch.linalg.vector_norm(
+                torch.flatten(channel_weight), 1)
             saliencies.append(saliency.view(1))
 
     elif (criteria == 'L2_norm'):
@@ -143,24 +148,108 @@ def get_input_channel_saliency_by_norm(weight, criteria):
 
     return saliencies
 
+
 def get_input_channel_saliency(weight, criteria):
     """Caculate saliencies of channels in inter-layer
     """
     saliencies = []
     if (criteria == 'random'):
         saliencies = torch.from_numpy(np.random.uniform(
-            low=0, high=weight.shape[1],size=weight.shape[1])
-                                      .astype('uint8')).to(0)
+            low=0, high=weight.shape[1], size=weight.shape[1])
+            .astype('uint8')).to(0)
+
         return saliencies
-    elif (criteria == 'L2_norm'):
+
+    elif ('norm' in criteria):
         saliencies = get_input_channel_saliency_by_norm(weight, criteria)
-    else:
+
+        return torch.cat(saliencies)
+
+    elif ('sim' in criteria):
         correlation_matrix = get_input_channel_similarity(weight, criteria)
+        #return get_saliency(correlation_matrix, dis = -1)
         for ic in range(weight.shape[1]):
             saliency = - correlation_matrix[ic, :].sum()
             saliencies.append(saliency.view(1))
 
+    elif ('dis' in criteria):
+        correlation_matrix = get_input_channel_similarity(weight, criteria)
+        #return get_saliency(correlation_matrix, dis = 1)
+        for ic in range(weight.shape[1]):
+            saliency = correlation_matrix[ic, :].sum()
+            saliencies.append(saliency.view(1))
+
     return torch.cat(saliencies)
+
+
+def compare_min(row, col, matrix, dis = 1):
+    """Compare minimum distance/similarity from row, col to other elements
+    Matrix must be symmetrix
+    """
+    if dis == 1:
+        min_row = np.min(matrix[row, :])
+        min_col = np.min(matrix[:, col])
+
+        return col if min_row > min_col else row
+
+    else:
+        max_row = np.max(matrix[row, :])
+        max_col = np.max(matrix[:, col])
+
+        return col if max_row < max_col else row
+
+
+def compare_sum(row, col, matrix, inf, dis = 1):
+    """Compare sum of distance/similarity from row, col to other elements
+    Matrix must be symmetrix
+    """
+    num_row = matrix.shape[0]
+    if dis == 1:
+        min_row = min_col = 0
+        for i in range(num_row):
+            if matrix[row, i] != inf:
+                min_row += matrix[row, i]
+            if matrix[i, col] != inf:
+                min_col += matrix[i, col]
+
+        return col if min_row > min_col else row
+
+    else:
+        max_row = max_col = 0
+        for i in range(num_row):
+            if matrix[row, i] != inf:
+                max_row += matrix[row, i]
+            if matrix[i, col] != inf:
+                max_col += matrix[i, col]
+
+        return col if max_row < max_col else row
+
+
+def get_saliency(correlation, dis = 1):
+    """Sort saliency based on distance/similarity matrix
+    """
+    mat = copy.deepcopy(correlation.detach().cpu().numpy())
+    num_row = mat.shape[0]
+    inf = dis*float('inf')
+    for i in range(num_row):
+        mat[i, i]  = inf
+
+    saliency = torch.full((num_row,), num_row-1).cuda()
+
+    for i in range(num_row-1):
+        if dis ==1:
+            row, col = np.unravel_index(mat.argmin(), mat.shape)
+        else:
+            row, col = np.unravel_index(mat.argmax(), mat.shape)
+        mat[row, col] = inf
+        mat[col, row] = inf
+        index = compare_min(row, col, mat, dis)
+        #index = compare_sum(row, col, mat, inf, dis)
+        mat[index, :] = inf
+        mat[:, index] = inf
+        saliency[index] = i
+
+    return saliency
 
 @torch.no_grad()
 def apply_channel_sorting(model, criteria):

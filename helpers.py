@@ -8,8 +8,10 @@ KiB = 1024 * Byte
 MiB = 1024 * KiB
 GiB = 1024 * MiB
 
+
 def get_model_macs(model, inputs) -> int:
     return profile_macs(model, inputs)
+
 
 def get_sparsity(tensor: torch.Tensor) -> float:
     """
@@ -17,6 +19,7 @@ def get_sparsity(tensor: torch.Tensor) -> float:
         sparsity = #zeros / #elements = 1 - #nonzeros / #elements
     """
     return 1 - float(tensor.count_nonzero()) / tensor.numel()
+
 
 def get_model_sparsity(model: nn.Module) -> float:
     """
@@ -28,6 +31,7 @@ def get_model_sparsity(model: nn.Module) -> float:
         num_nonzeros += param.count_nonzero()
         num_elements += param.numel()
     return 1 - float(num_nonzeros) / num_elements
+
 
 def get_num_parameters(model: nn.Module, count_nonzero_only=False) -> int:
     """
@@ -42,7 +46,11 @@ def get_num_parameters(model: nn.Module, count_nonzero_only=False) -> int:
             num_counted_elements += param.numel()
     return num_counted_elements
 
-def get_model_size(model: nn.Module, data_width=32, count_nonzero_only=False) -> int:
+
+def get_model_size(model: nn.Module,
+                   data_width=32,
+                   count_nonzero_only=False
+                   ) -> int:
     """
     calculate the model size in bits
     :param data_width: #bits per element
@@ -50,9 +58,9 @@ def get_model_size(model: nn.Module, data_width=32, count_nonzero_only=False) ->
     """
     return get_num_parameters(model, count_nonzero_only) * data_width
 
+
 @torch.no_grad()
-def measure_latency(model, dummy_input,
-                    n_warmup=20, n_test=100):
+def measure_latency(model, dummy_input, n_warmup=20, n_test=100):
     """Measure latency of a regular PyTorch models
     """
     model.eval()
