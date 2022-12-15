@@ -13,43 +13,44 @@ from train import train, evaluate
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Filter pruning through SNR"
+    parser = argparse.ArgumentParser(description='Filter pruning through SNR'
                                      )
-    parser.add_argument("--net",
-                        default="VGG19",
-                        help="network type",
+    parser.add_argument('--net',
+                        default='VGG19',
+                        help='network type',
                         )
-    parser.add_argument("--lr",
+    parser.add_argument('--lr',
                         default=0.01,
                         type=float,
-                        help="learning rate for finetuning")
-    parser.add_argument("--resume",
-                        "-r",
-                        action="store_true",
-                        help="resume from checkpoint",
+                        help='learning rate for finetuning')
+    parser.add_argument('-r', '--resume',
+                        action='store_true',
+                        help='resume from checkpoint',
                         )
-    parser.add_argument("--checkpoint",
-                        default="checkpoint/baseline/vgg/ckpt.pth",
-                        metavar="FILE",
-                        help="path to load checkpoint",
+    parser.add_argument('--checkpoint',
+                        default='checkpoint/baseline/vgg/ckpt.pth',
+                        metavar='FILE',
+                        help='path to load checkpoint',
                         )
-    parser.add_argument("--output",
-                        default="checkpoint/pruned/vgg/",
-                        help="path to save checkpoint",
+    parser.add_argument('--output',
+                        default='checkpoint/pruned/vgg/',
+                        help='path to save checkpoint',
                         )
-    parser.add_argument("--prune_ratio",
+    parser.add_argument('-p', '--prune_range',
+                        default=(0.01, 0.501, 0.01),
                         type=float,
-                        default=0.9,
-                        help="Prune ratio",
+                        nargs=3,
+                        metavar=('start', 'end', 'step'),
+                        help='prune ratio range [start end step]'
                         )
-    parser.add_argument("--num_finetune_epochs",
-                        type=int,
+    parser.add_argument('--num_finetune_epochs',
                         default=10,
-                        help="Number of finetuning epochs",
+                        type=int,
+                        help='Number of finetuning epochs',
                         )
-    parser.add_argument("--log_file",
-                        default="./log.txt",
-                        help="path to log file",
+    parser.add_argument('--log_file',
+                        default='./log.txt',
+                        help='path to log file',
                         )
 
     return parser
@@ -120,10 +121,11 @@ if __name__ == "__main__":
                  )
     logging.info(get_model_performance(net, dataloader, criterion))
 
-    channel_pruning_ratios = np.around(np.arange(0.05,
-                                                 args.prune_ratio+0.01,
-                                                 0.05),
-                                       2)
+    channel_pruning_ratios = np.arange(args.prune_range[0],
+                                       args.prune_range[1],
+                                       args.prune_range[2]
+                                       )
+    channel_pruning_ratios = np.around(channel_pruning_ratios, 2)
 
     criterias = ['random',
                  'L0_norm', 'L1_norm', 'L2_norm', 'inf_norm',
