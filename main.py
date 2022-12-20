@@ -32,6 +32,14 @@ def get_parser():
                         metavar='FILE',
                         help='path to load checkpoint',
                         )
+    parser.add_argument('--criteria',
+                        default=['L0_norm', 'L1_norm', 'L2_norm', 'inf_norm',
+                                 'cosine_sim', 'Pearson_sim', 'svd_sim', 'hosvd_sim',
+                                 'Euclide_dis', 'Manhattan_dis', 'SNR_dis'],
+                        type=str,
+                        nargs='+',
+                        help='criteria'
+                        )
     parser.add_argument('--output',
                         default='checkpoint/pruned/vgg/',
                         help='path to save checkpoint',
@@ -49,7 +57,7 @@ def get_parser():
                         help='Number of finetuning epochs',
                         )
     parser.add_argument('--log_file',
-                        default='./log.txt',
+                        default='logs/log_main.txt',
                         help='path to log file',
                         )
 
@@ -59,10 +67,7 @@ def get_parser():
 def get_model_performance(model, dataloader, criterion):
     """Caculate model's performance
     """
-    accuracy = round(evaluate(model,
-                              dataloader['test'],
-                              criterion,
-                              'cuda'), 2)
+    accuracy = round(evaluate(model, dataloader['test'], criterion, 'cuda'), 2)
     size = round(get_model_size(model) / MiB, 2)
 
     # measure on cpu to simulate inference on an edge device
@@ -127,16 +132,10 @@ if __name__ == "__main__":
                                        )
     channel_pruning_ratios = np.around(channel_pruning_ratios, 2)
 
-    criterias = ['random',
-                 'L0_norm', 'L1_norm', 'L2_norm', 'inf_norm',
-                 'cosine_sim', 'Pearson_sim',
-                 'Euclide_dis', 'Manhattan_dis', 'SNR_dis'
-                 ]
-
-    pruned_accuracy_dict = {c: [] for c in criterias}
-    finetuned_best_acc_dict = {c: [] for c in criterias}
+    pruned_accuracy_dict = {c: [] for c in args.criteria}
+    finetuned_best_acc_dict = {c: [] for c in args.criteria}
     num_finetune_epochs = args.num_finetune_epochs
-    for criteria in criterias:
+    for criteria in args.criteria:
         logging.info(f"---------------criteria--------------- {criteria}")
         sorted_net = apply_channel_sorting(net, criteria)
         for channel_pruning_ratio in channel_pruning_ratios:
@@ -158,25 +157,15 @@ if __name__ == "__main__":
                                         momentum=0.9,
                                         weight_decay=1e-4
                                         )
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer,
-                args.num_finetune_epochs
-            )
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                                   args.num_finetune_epochs)
 
             finetuned_best_accuracy = 0
-            for epoch in range(start_epoch,
-                               start_epoch + num_finetune_epochs):
-                train(pruned_net,
-                      dataloader['train'],
-                      criterion,
-                      optimizer,
-                      scheduler,
-                      device
-                      )
-                acc = evaluate(pruned_net,
-                               dataloader['test'],
-                               criterion,
-                               device)
+            for epoch in range(start_epoch, start_epoch + num_finetune_epochs):
+                train(pruned_net, dataloader['train'],
+                      criterion, optimizer, scheduler, device)
+                acc = evaluate(pruned_net, dataloader['test'],
+                               criterion, device)
 
                 # save checkpoint if acc > best_acc
                 if acc > finetuned_best_accuracy:
@@ -184,18 +173,16 @@ if __name__ == "__main__":
                              'acc': acc,
                              'epoch': epoch,
                              }
-                    path_save_net = os.path.join(
-                        args.output,
-                        f"{criteria}_{channel_pruning_ratio}.pth"
-                    )
+                    path_save_net = os.path.join(args.output,
+                                                 f"{criteria}_{channel_pruning_ratio}.pth")
                     torch.save(state, path_save_net)
                     finetuned_best_accuracy = acc
 
             finetuned_best_acc_dict[criteria].append(
                 round((finetuned_best_accuracy), 2))
 
-            logging.info(
-                get_model_performance(pruned_net, dataloader, criterion))
+            logging.info(get_model_performance(
+                pruned_net, dataloader, criterion))
 
     logging.info(pruned_accuracy_dict)
     logging.info(finetuned_best_acc_dict)

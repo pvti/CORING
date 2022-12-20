@@ -76,6 +76,24 @@ def get_input_channel_similarity(weight, criteria):
                                                     channel_weight_jc)
                 correlation_matrix[jc, ic] = correlation_matrix[ic, jc]
 
+    if criteria == 'svd_sim':
+        for ic in range(in_channels-1):
+            for jc in range(ic+1, in_channels):
+                channel_weight_ic = weight.detach()[:, ic]
+                channel_weight_jc = weight.detach()[:, jc]
+                correlation_matrix[ic, jc] = svd(channel_weight_ic,
+                                                 channel_weight_jc)
+                correlation_matrix[jc, ic] = correlation_matrix[ic, jc]
+
+    if criteria == 'hosvd_sim':
+        for ic in range(in_channels-1):
+            for jc in range(ic+1, in_channels):
+                channel_weight_ic = weight.detach()[:, ic]
+                channel_weight_jc = weight.detach()[:, jc]
+                correlation_matrix[ic, jc] = hosvd(channel_weight_ic,
+                                                   channel_weight_jc)
+                correlation_matrix[jc, ic] = correlation_matrix[ic, jc]
+
     elif criteria == 'Euclide_dis':
         for ic in range(in_channels-1):
             for jc in range(ic+1, in_channels):
@@ -114,6 +132,33 @@ def get_input_channel_similarity(weight, criteria):
     return correlation_matrix
 
 
+def get_input_channel_norm(weight, norm):
+    in_channels = weight.shape[1]
+    norm_arr = []
+
+    for i_c in range(in_channels):
+        channel_weight = weight.detach()[:, i_c]
+        value = 0
+        if (norm == 'L0_norm'):
+            value = torch.linalg.vector_norm(
+                torch.flatten(channel_weight), 0)
+
+        elif (norm == 'L1_norm'):
+            value = torch.linalg.vector_norm(
+                torch.flatten(channel_weight), 1)
+
+        elif (norm == 'L2_norm'):
+            value = torch.linalg.vector_norm(channel_weight)
+
+        elif (norm == 'inf_norm'):
+            value = torch.linalg.vector_norm(
+                torch.flatten(channel_weight), float('inf'))
+
+        norm_arr.append(value.view(1))
+
+    return torch.cat(norm_arr)
+
+
 def get_input_channel_saliency_by_norm(weight, criteria):
     in_channels = weight.shape[1]
     saliencies = []
@@ -142,8 +187,8 @@ def get_input_channel_saliency_by_norm(weight, criteria):
     elif (criteria == 'inf_norm'):
         for i_c in range(in_channels):
             channel_weight = weight.detach()[:, i_c]
-            saliency = torch.linalg.vector_norm(torch.flatten(channel_weight),
-                                                float('inf'))
+            saliency = torch.linalg.vector_norm(
+                torch.flatten(channel_weight), float('inf'))
             saliencies.append(saliency.view(1))
 
     return saliencies
@@ -167,14 +212,14 @@ def get_input_channel_saliency(weight, criteria):
 
     elif ('sim' in criteria):
         correlation_matrix = get_input_channel_similarity(weight, criteria)
-        #return get_saliency(correlation_matrix, dis = -1)
+        # return get_saliency(correlation_matrix, dis = -1)
         for ic in range(weight.shape[1]):
             saliency = - correlation_matrix[ic, :].sum()
             saliencies.append(saliency.view(1))
 
     elif ('dis' in criteria):
         correlation_matrix = get_input_channel_similarity(weight, criteria)
-        #return get_saliency(correlation_matrix, dis = 1)
+        # return get_saliency(correlation_matrix, dis = 1)
         for ic in range(weight.shape[1]):
             saliency = correlation_matrix[ic, :].sum()
             saliencies.append(saliency.view(1))
@@ -182,7 +227,7 @@ def get_input_channel_saliency(weight, criteria):
     return torch.cat(saliencies)
 
 
-def compare_min(row, col, matrix, dis = 1):
+def compare_min(row, col, matrix, dis=1):
     """Compare minimum distance/similarity from row, col to other elements
     Matrix must be symmetrix
     """
@@ -199,7 +244,7 @@ def compare_min(row, col, matrix, dis = 1):
         return col if max_row < max_col else row
 
 
-def compare_sum(row, col, matrix, inf, dis = 1):
+def compare_sum(row, col, matrix, inf, dis=1):
     """Compare sum of distance/similarity from row, col to other elements
     Matrix must be symmetrix
     """
@@ -225,31 +270,32 @@ def compare_sum(row, col, matrix, inf, dis = 1):
         return col if max_row < max_col else row
 
 
-def get_saliency(correlation, dis = 1):
+def get_saliency(correlation, dis=1):
     """Sort saliency based on distance/similarity matrix
     """
     mat = copy.deepcopy(correlation.detach().cpu().numpy())
     num_row = mat.shape[0]
     inf = dis*float('inf')
     for i in range(num_row):
-        mat[i, i]  = inf
+        mat[i, i] = inf
 
     saliency = torch.full((num_row,), num_row-1).cuda()
 
     for i in range(num_row-1):
-        if dis ==1:
+        if dis == 1:
             row, col = np.unravel_index(mat.argmin(), mat.shape)
         else:
             row, col = np.unravel_index(mat.argmax(), mat.shape)
         mat[row, col] = inf
         mat[col, row] = inf
-        index = compare_min(row, col, mat, dis)
-        #index = compare_sum(row, col, mat, inf, dis)
+        #index = compare_min(row, col, mat, dis)
+        index = compare_sum(row, col, mat, inf, dis)
         mat[index, :] = inf
         mat[:, index] = inf
         saliency[index] = i
 
     return saliency
+
 
 @torch.no_grad()
 def apply_channel_sorting(model, criteria):
