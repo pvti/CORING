@@ -163,10 +163,10 @@ if __name__ == "__main__":
             for channel_pruning_ratio in tqdm(channel_pruning_ratios):
                 pruned_net = channel_prune(sorted_net, channel_pruning_ratio)
                 pruned_net_accuracy = evaluate(pruned_net,
-                                            dataloader['test'],
-                                            criterion,
-                                            device
-                                            )
+                                               dataloader['test'],
+                                               criterion,
+                                               device
+                                               )
 
                 logging.info(f"pruned_net_acc = {pruned_net_accuracy:.2f}%")
                 pruned_accuracy_dict[criteria].append(
@@ -179,23 +179,23 @@ if __name__ == "__main__":
                                             weight_decay=1e-4
                                             )
                 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
-                                                                    args.num_finetune_epochs)
+                                                                       args.num_finetune_epochs)
 
                 finetuned_best_accuracy = 0
                 for epoch in range(start_epoch, start_epoch + num_finetune_epochs):
                     train(pruned_net, dataloader['train'],
-                        criterion, optimizer, scheduler, device)
+                          criterion, optimizer, scheduler, device)
                     acc = evaluate(pruned_net, dataloader['test'],
-                                criterion, device)
+                                   criterion, device)
 
                     # save checkpoint if acc > best_acc
                     if acc > finetuned_best_accuracy:
                         state = {'net': net.state_dict(),
-                                'acc': acc,
-                                'epoch': epoch,
-                                }
+                                 'acc': acc,
+                                 'epoch': epoch,
+                                 }
                         path_save_net = os.path.join(args.output,
-                                                    f"{criteria}_{channel_pruning_ratio}.pth")
+                                                     f"{criteria}_{channel_pruning_ratio}.pth")
                         torch.save(state, path_save_net)
                         finetuned_best_accuracy = acc
 
@@ -207,7 +207,6 @@ if __name__ == "__main__":
 
         pruned_acc_strategy[strategy] = pruned_accuracy_dict
         finetuned_acc_strategy[strategy] = finetuned_best_acc_dict
-    #logging.info(pruned_accuracy_dict)
-    #logging.info(finetuned_best_acc_dict)
+
     logging.info(pruned_acc_strategy)
     logging.info(finetuned_acc_strategy)

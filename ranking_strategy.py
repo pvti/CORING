@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def compare_min(row, col, matrix, dis = 1):
+def compare_min(row, col, matrix, dis=1):
     """Compare minimum distance/similarity from row, col to other elements
     Matrix must be symmetrix
     """
@@ -18,7 +18,7 @@ def compare_min(row, col, matrix, dis = 1):
         return col if max_row < max_col else row
 
 
-def compare_sum(row, col, matrix, inf, dis = 1):
+def compare_sum(row, col, matrix, inf, dis=1):
     """Compare sum of distance/similarity from row, col to other elements
     Matrix must be symmetrix
     """
@@ -44,7 +44,7 @@ def compare_sum(row, col, matrix, inf, dis = 1):
         return col if max_row < max_col else row
 
 
-def optimal_arg(x, optimal = 1):
+def optimal_arg(x, optimal=1):
     """Return argmax/argmin based on optimal value.
         Default: optimal = 1 => max
     """
@@ -54,11 +54,11 @@ def optimal_arg(x, optimal = 1):
     return x.argmax()
 
 
-def get_saliency(mat, strategy = "sum", dis = 1):
+def get_saliency(mat, strategy="sum", dis=1):
     """Sort saliency based on distance/similarity matrix
     """
     num_row = mat.shape[0]
-    saliency = np.full(num_row, num_row-1)
+    saliency = np.full(num_row, num_row-1, dtype=np.float32)
 
     if strategy == "sum":
         for i in range(num_row):
@@ -67,7 +67,7 @@ def get_saliency(mat, strategy = "sum", dis = 1):
     else:
         inf = dis*float('inf')
         for i in range(num_row):
-            mat[i, i]  = inf
+            mat[i, i] = inf
         for i in range(num_row-1):
             row, col = np.unravel_index(optimal_arg(mat, dis), mat.shape)
             mat[row, col] = inf

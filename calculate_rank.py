@@ -85,8 +85,9 @@ if __name__ == "__main__":
 
             dict[strategy] = {
                 "saliency": saliency_dict,
-                "sort_idx": copy.deepcopy(sort_idx_dict) #sort_idx_dict CHANGED in loop
-                }
+                # sort_idx_dict CHANGED in loop
+                "sort_idx": copy.deepcopy(sort_idx_dict)
+            }
 
         with open(args.output, 'w+') as file:
             json.dump(dict, file, indent=4)
