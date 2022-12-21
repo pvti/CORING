@@ -298,7 +298,7 @@ def get_saliency(correlation, dis=1):
 
 
 @torch.no_grad()
-def apply_channel_sorting(model, criteria):
+def apply_channel_sorting(model, sort_idx_dict):
     model = copy.deepcopy(model)  # do not modify the original model
     # fetch all the conv and bn layers from the backbone
     all_convs = [m for m in model.backbone if isinstance(m, nn.Conv2d)]
@@ -312,10 +312,8 @@ def apply_channel_sorting(model, criteria):
         prev_conv = all_convs[i_conv]
         prev_bn = all_bns[i_conv]
         next_conv = all_convs[i_conv + 1]
-        # note that we always compute the importance according to input channels
-        importance = get_input_channel_saliency(next_conv.weight, criteria)
-        # sorting from large to small
-        sort_idx = torch.argsort(importance, descending=True)
+
+        sort_idx = torch.tensor(sort_idx_dict[str(i_conv)], device = 'cuda')
 
         # apply to previous conv and its following bn
         prev_conv.weight.copy_(torch.index_select(

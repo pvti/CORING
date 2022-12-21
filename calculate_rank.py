@@ -1,9 +1,9 @@
 
 from tqdm.auto import tqdm
 import logging
+import copy
 import os
 import argparse
-from collections import OrderedDict
 import json
 import numpy as np
 from ranking_strategy import get_saliency
@@ -15,6 +15,12 @@ def get_parser():
     parser.add_argument('--input',
                         default='calculation/baseline/vgg/criteria.json',
                         help='path to load calculated correlation/norm file',
+                        )
+    parser.add_argument('--strategy',
+                        default=['sum', 'min_sum', 'min_min'],
+                        type=str,
+                        nargs='+',
+                        help='filter ranking strategy'
                         )
     parser.add_argument('--output',
                         default='calculation/baseline/vgg/rank.json',
@@ -38,7 +44,8 @@ if __name__ == "__main__":
                         )
     logging.info("Arguments: " + str(args))
 
-    with open(args.input, 'r') as file:
+    with open(args.input, 'r+') as file:
+        logging.info(f"=> loading '{args.input}'")
         data = json.load(file)
         dict = {
             "net": data["net"],
@@ -57,25 +64,29 @@ if __name__ == "__main__":
                 all_convs_sort_idx[i_conv] = sort_idx.tolist()
             sort_idx_dict[norm] = all_convs_sort_idx
 
-        # calculate saliency and rank for correlation
-        saliency_dict = {}
-        for criterion, all_convs_cor_mat in data["correlation"].items():
-            logging.info(f"-----{criterion}-----")
-            all_convs_saliency = {}
-            all_convs_sort_idx = {}
-            dis = 1 if 'dis' in criterion else -1
-            for i_conv, correl_matrix in tqdm(all_convs_cor_mat.items()):
-                mat = np.array(correl_matrix)
-                saliency = get_saliency(mat, dis)
-                sort_idx = saliency.argsort(kind='stable')[
-                    ::-1][:len(saliency)]
-                all_convs_saliency[i_conv] = saliency.tolist()
-                all_convs_sort_idx[i_conv] = sort_idx.tolist()
-            saliency_dict[criterion] = all_convs_saliency
-            sort_idx_dict[criterion] = all_convs_sort_idx
+        # calculate saliency and rank for correlation with strategy
+        for strategy in args.strategy:
+            logging.info(f"---------------{strategy}---------------")
+            saliency_dict = {}
+            for criterion, all_convs_cor_mat in data["correlation"].items():
+                logging.info(f"-----{criterion}-----")
+                all_convs_saliency = {}
+                all_convs_sort_idx = {}
+                dis = 1 if 'dis' in criterion else -1
+                for i_conv, correl_matrix in tqdm(all_convs_cor_mat.items()):
+                    mat = np.array(correl_matrix)
+                    saliency = get_saliency(mat, strategy, dis)
+                    sort_idx = saliency.argsort(kind='stable')[
+                        ::-1][:len(saliency)]
+                    all_convs_saliency[i_conv] = saliency.tolist()
+                    all_convs_sort_idx[i_conv] = sort_idx.tolist()
+                saliency_dict[criterion] = all_convs_saliency
+                sort_idx_dict[criterion] = all_convs_sort_idx
 
-        dict["saliency"] = saliency_dict
-        dict["sort_idx"] = sort_idx_dict
+            dict[strategy] = {
+                "saliency": saliency_dict,
+                "sort_idx": copy.deepcopy(sort_idx_dict) #sort_idx_dict CHANGED in loop
+                }
 
-        with open(args.output, 'w') as file:
+        with open(args.output, 'w+') as file:
             json.dump(dict, file, indent=4)
