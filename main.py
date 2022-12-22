@@ -35,7 +35,7 @@ def get_parser():
                         )
     parser.add_argument('--criteria',
                         default=['L0_norm', 'L1_norm', 'L2_norm', 'inf_norm',
-                                 'cosine_sim', 'Pearson_sim', 'svd_sim', 'hosvd_sim',
+                                 'cosine_sim', 'Pearson_sim',
                                  'Euclide_dis', 'Manhattan_dis', 'SNR_dis'],
                         type=str,
                         nargs='+',
@@ -182,7 +182,7 @@ if __name__ == "__main__":
                                                                        args.num_finetune_epochs)
 
                 finetuned_best_accuracy = 0
-                for epoch in range(start_epoch, start_epoch + num_finetune_epochs):
+                for epoch in tqdm(range(start_epoch, start_epoch + num_finetune_epochs)):
                     train(pruned_net, dataloader['train'],
                           criterion, optimizer, scheduler, device)
                     acc = evaluate(pruned_net, dataloader['test'],
