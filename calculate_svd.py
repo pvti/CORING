@@ -6,7 +6,7 @@ from collections import OrderedDict
 import json
 
 from models import *
-from decompose import decomposition
+from decompose import decompose
 
 
 def get_parser():
@@ -22,7 +22,7 @@ def get_parser():
                         help='path to load checkpoint',
                         )
     parser.add_argument('--decomposer',
-                        default=['hosvd'],
+                        default=['svd', 'hosvd'],
                         type=str,
                         nargs='+',
                         help='tensor decomposer'
@@ -78,6 +78,7 @@ if __name__ == "__main__":
     all_convs = [m for m in net.backbone if isinstance(m, nn.Conv2d)]
 
     # calculate decomposition
+    decomposition_dict = {}
     for decomposer in args.decomposer:
         logging.info(f"------------------{decomposer}------------------")
         all_convs_dict = {}
@@ -89,10 +90,14 @@ if __name__ == "__main__":
             all_filters_u_dict = {}
             for i_filter in tqdm(range(num_filters)):
                 filter = weight.detach()[:, i_filter]
-                u = decomposition(filter, decomposer)
+                u = decompose(filter, decomposer)
                 all_filters_u_dict[i_filter] = [i.tolist() for i in u]
             all_convs_dict[i_conv] = all_filters_u_dict
-        dict[decomposer] = all_convs_dict
+
+        decomposition_dict[decomposer] = all_convs_dict
+
+    dict['decomposition'] = decomposition_dict
 
     with open(args.output, 'w') as file:
+        logging.info(f"=> dumping to {args.output}")
         json.dump(dict, file, indent=4)

@@ -5,6 +5,13 @@ from tensorly import unfold
 tl.set_backend('pytorch')
 
 
+def get_num_unfold(decomposer):
+    """Get number of unfolding based on decomposer
+    """
+
+    return 1 if decomposer == 'svd' else 3
+
+
 def get_u_svd(x):
     """Perform SVD, return 1st column of u
     """
@@ -13,12 +20,12 @@ def get_u_svd(x):
     return u[:, 0]
 
 
-def decomposition(x, decomposer='hosvd'):
-    if (decomposer == 'hosvd'):
-        left_singulars = []
-        for i in range(3):
-            unfold_i = unfold(x, i)
-            left_singular_i = get_u_svd(unfold_i)
-            left_singulars.append(left_singular_i)
+def decompose(x, decomposer='hosvd'):
+    num_unfold = get_num_unfold(decomposer)
+    left_singulars = []
+    for i in range(num_unfold):
+        unfold_i = unfold(x, i)
+        left_singular_i = get_u_svd(unfold_i)
+        left_singulars.append(left_singular_i)
 
-        return left_singulars
+    return left_singulars

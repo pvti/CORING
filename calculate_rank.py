@@ -90,4 +90,5 @@ if __name__ == "__main__":
             }
 
         with open(args.output, 'w+') as file:
+            logging.info(f"=> dumping to {args.output}")
             json.dump(dict, file, indent=4)

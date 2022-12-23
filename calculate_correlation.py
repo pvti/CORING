@@ -112,4 +112,5 @@ if __name__ == "__main__":
     dict["correlation"] = correlation_dict
 
     with open(args.output, 'w') as file:
+        logging.info(f"=> dumping to {args.output}")
         json.dump(dict, file, indent=4)

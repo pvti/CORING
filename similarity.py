@@ -95,3 +95,25 @@ def hosvd(x, y):
         sum += svd_cos(ufx[i], ufy[i])
 
     return sum/3
+
+
+def similarity(a, b, criterion):
+    """Calculate similarity based on criterion
+        a, b: list
+    """
+    a = torch.tensor(a)
+    b = torch.tensor(b)
+    if criterion == 'cosine_sim':
+        return cos(a, b)
+
+    elif criterion == 'Euclide_dis':
+        return Euclide(a, b)
+
+    elif criterion == 'Manhattan_dis':
+        return Manhattan(a, b)
+
+    elif criterion == 'Pearson_sim':
+        return pearson_corrcoef(a, b)
+
+    elif criterion == 'SNR_dis':
+        return SNR(a, b)

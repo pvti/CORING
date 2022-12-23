@@ -3,6 +3,8 @@ import torch
 from torch import nn
 from typing import Union, List
 import numpy as np
+from tqdm.auto import tqdm
+
 from similarity import *
 
 
