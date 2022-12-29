@@ -20,9 +20,9 @@ from utils import progress_bar
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Train model")
-    parser.add_argument("--net",
-                        default="VGG19",
-                        help="network type",
+    parser.add_argument("--arch",
+                        default="VGG16",
+                        help="network architechture",
                         )
     parser.add_argument("--lr",
                         default=0.1,
@@ -34,20 +34,21 @@ def get_parser():
                         help="resume from checkpoint",
                         )
     parser.add_argument("--checkpoint",
+                        default="checkpoint/baseline/vgg/vgg16.pth",
                         metavar="FILE",
                         help="path to load checkpoint",
                         )
     parser.add_argument("--output",
-                        default="checkpoint/baseline/vgg/ckpt.pth",
+                        default="checkpoint/baseline/vgg/vgg16.pth",
                         help="path to save checkpoint",
                         )
     parser.add_argument("--num_epochs",
-                        default=200,
+                        default=500,
                         type=int,
                         help="Number of training epochs",
                         )
     parser.add_argument("--log_file",
-                        default="./log_train.txt",
+                        default="logs/log_train.txt",
                         help="path to log file",
                         )
 
@@ -60,7 +61,8 @@ def train(net: nn.Module,
           optimizer: Optimizer,
           scheduler: LambdaLR,
           device: str,
-          callbacks=None
+          callbacks=None,
+          verbose=True
           ) -> None:
     net.train()  # sets the mode to train
     train_loss = 0
@@ -81,8 +83,9 @@ def train(net: nn.Module,
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                     % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        if verbose:
+            progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                         % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
         if callbacks is not None:
             for callback in callbacks:
@@ -112,8 +115,9 @@ def evaluate(net: nn.Module,
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                     % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        if verbose:
+            progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                         % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
     return (correct / total * 100)
 
@@ -131,25 +135,23 @@ if __name__ == "__main__":
     best_acc = 0
     start_epoch = 0
     net = None
-    if args.net == "ResNet18":
-        net = ResNet18()
-    elif 'VGG' in args.net:
-        net = VGG(args.net)
-    else:
-        net = VGG('VGG19')
+    if 'ResNet' in args.arch:
+        net = getResNet(args.arch)
+    elif 'VGG' in args.arch:
+        net = VGG(args.arch)
     net = net.to(device)
-    '''
     if device == 'cuda':
         net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
-    '''
 
     if args.resume:
         assert os.path.isfile(args.checkpoint), "Checkpoint not found!"
+        logging.info(f"Loading {args.checkpoint} state ...")
         checkpoint = torch.load(args.checkpoint)
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
+        logging.info(f"best_acc = {best_acc}, start_epoch = {start_epoch}")
 
     CIFAR10_dataset = DataLoaderCIFAR10()
     dataloader = CIFAR10_dataset.dataloader

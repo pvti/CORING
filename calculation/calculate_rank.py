@@ -6,15 +6,16 @@ import os
 import argparse
 import json
 import numpy as np
-from ranking_strategy import get_saliency
+
+from .ranking_strategy import get_saliency
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description='Calculate saliency and rank based on calculated correlation/norm'
+    parser = argparse.ArgumentParser(description='Calculate saliency and rank based on calculated correlation'
                                      )
     parser.add_argument('--input',
-                        default='calculation/baseline/vgg/criteria.json',
-                        help='path to load calculated correlation/norm file',
+                        default='calculation/baseline/vgg/correlation_vgg16.json',
+                        help='path to load calculated correlation file',
                         )
     parser.add_argument('--strategy',
                         default=['sum', 'min_sum', 'min_min'],
@@ -23,11 +24,11 @@ def get_parser():
                         help='filter ranking strategy'
                         )
     parser.add_argument('--output',
-                        default='calculation/baseline/vgg/rank.json',
+                        default='calculation/baseline/vgg/rank_vgg16.json',
                         help='path to save calculation',
                         )
     parser.add_argument('--log_file',
-                        default='logs/calculation_rank.txt',
+                        default='logs/calculation_rank_vgg16.txt',
                         help='path to log file',
                         )
 
@@ -44,32 +45,26 @@ if __name__ == "__main__":
                         )
     logging.info("Arguments: " + str(args))
 
-    with open(args.input, 'r+') as file:
-        logging.info(f"=> loading '{args.input}'")
-        data = json.load(file)
-        dict = {
-            "net": data["net"],
-            "checkpoint": data["checkpoint"]
-        }
+    # load pre-calculated correlation
+    logging.info(f"=> loading '{args.input}'")
+    f = open(args.input, 'r+')
+    data = json.loads(f.read())
+    dict = {
+        "input": args.input,
+        "arch": data["arch"],
+        "checkpoint": data["checkpoint"]
+    }
 
-        # calculate rank for norm
-        sort_idx_dict = {}
-        for norm, all_convs_norm in data["norm"].items():
-            logging.info(f"-----{norm}-----")
-            all_convs_sort_idx = {}
-            for i_conv, norm_arr in tqdm(all_convs_norm.items()):
-                arr = np.array(norm_arr)
-                # sort descending = True
-                sort_idx = arr.argsort(kind='stable')[::-1][:len(arr)]
-                all_convs_sort_idx[i_conv] = sort_idx.tolist()
-            sort_idx_dict[norm] = all_convs_sort_idx
-
-        # calculate saliency and rank for correlation with strategy
-        for strategy in args.strategy:
-            logging.info(f"---------------{strategy}---------------")
+    # calculate saliency and rank for correlation with strategy
+    for strategy in args.strategy:
+        logging.info(f"-------------------{strategy}-------------------")
+        all_decomposer_dict = {}
+        for decomposer, decomposition_dict in data["correlation"].items():
+            logging.info(f"----------------{decomposer}----------------")
             saliency_dict = {}
-            for criterion, all_convs_cor_mat in data["correlation"].items():
-                logging.info(f"-----{criterion}-----")
+            sort_idx_dict = {}
+            for criterion, all_convs_cor_mat in decomposition_dict.items():
+                logging.info(f"----------------{criterion}----------------")
                 all_convs_saliency = {}
                 all_convs_sort_idx = {}
                 dis = 1 if 'dis' in criterion else -1
@@ -82,13 +77,12 @@ if __name__ == "__main__":
                     all_convs_sort_idx[i_conv] = sort_idx.tolist()
                 saliency_dict[criterion] = all_convs_saliency
                 sort_idx_dict[criterion] = all_convs_sort_idx
-
-            dict[strategy] = {
+            all_decomposer_dict[decomposer] = {
                 "saliency": saliency_dict,
-                # sort_idx_dict CHANGED in loop
-                "sort_idx": copy.deepcopy(sort_idx_dict)
-            }
+                "sort_idx": sort_idx_dict
+                }
+        dict[strategy] = all_decomposer_dict
 
-        with open(args.output, 'w+') as file:
-            logging.info(f"=> dumping to {args.output}")
-            json.dump(dict, file, indent=4)
+    with open(args.output, 'w+') as file:
+        logging.info(f"=> dumping to {args.output}")
+        json.dump(dict, file, indent=4)

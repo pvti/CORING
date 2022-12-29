@@ -4,20 +4,21 @@ import os
 import argparse
 from collections import OrderedDict
 import json
+import torch
 
 from models import *
-from decompose import decompose
+from .decompose import decompose
 
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Precalculate SVD+'
                                      )
-    parser.add_argument('--net',
-                        default='VGG19',
-                        help='network type',
+    parser.add_argument('--arch',
+                        default='VGG16',
+                        help='network architecture',
                         )
     parser.add_argument('--checkpoint',
-                        default='checkpoint/baseline/vgg/vgg19.pth',
+                        default='checkpoint/baseline/vgg/vgg16.pth',
                         metavar='FILE',
                         help='path to load checkpoint',
                         )
@@ -28,11 +29,11 @@ def get_parser():
                         help='tensor decomposer'
                         )
     parser.add_argument('--output',
-                        default='calculation/baseline/vgg/decomposition.json',
+                        default='calculation/baseline/vgg/decomposition_vgg16.json',
                         help='path to save calculation',
                         )
     parser.add_argument('--log_file',
-                        default='logs/calculation_decomposition.txt',
+                        default='logs/calculation_decomposition_vgg16.txt',
                         help='path to log file',
                         )
 
@@ -52,15 +53,13 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     net = None
-    if (args.net == "ResNet18"):
-        net = ResNet18()
-    elif 'VGG' in args.net:
-        net = VGG(args.net)
-    else:
-        net = VGG('VGG19')
+    if 'ResNet' in args.arch:
+        net = getResNet(args.arch)
+    elif 'VGG' in args.arch:
+        net = VGG(args.arch)
     net = net.to(device)
 
-    assert os.path.isfile(args.checkpoint), f"{args.checkpoint} not found!"
+    assert os.path.isfile(args.checkpoint), "Checkpoint not found!"
     logging.info(f"=> loading checkpoint '{args.checkpoint}'")
     checkpoint = torch.load(args.checkpoint)
     # load net without DataParallel
@@ -69,13 +68,12 @@ if __name__ == "__main__":
         name = k[7:]  # remove `module.`
         net_state_dict[name] = v
     net.load_state_dict(net_state_dict)
+    all_convs = [m for m in net.backbone if isinstance(m, nn.Conv2d)]
 
     dict = {
-        "net": args.net,
+        "arch": args.arch,
         "checkpoint": args.checkpoint
     }
-
-    all_convs = [m for m in net.backbone if isinstance(m, nn.Conv2d)]
 
     # calculate decomposition
     decomposition_dict = {}

@@ -21,6 +21,10 @@ def get_u_svd(x):
 
 
 def decompose(x, decomposer='hosvd'):
+    """Get left_singulars based on decomposer
+        svd: u
+        hosvd: [u1, u2, u3]
+    """
     num_unfold = get_num_unfold(decomposer)
     left_singulars = []
     for i in range(num_unfold):

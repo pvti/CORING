@@ -14,28 +14,23 @@ from train import train, evaluate
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description='Filter pruning through SNR'
+    parser = argparse.ArgumentParser(description='Similarity based filter pruning'
                                      )
-    parser.add_argument('--net',
-                        default='VGG19',
-                        help='network type',
+    parser.add_argument('--arch',
+                        default='VGG16',
+                        help='network architecture',
                         )
     parser.add_argument('--lr',
                         default=0.01,
                         type=float,
                         help='learning rate for finetuning')
-    parser.add_argument('-r', '--resume',
-                        action='store_true',
-                        help='resume from checkpoint',
-                        )
     parser.add_argument('--checkpoint',
-                        default='checkpoint/baseline/vgg/ckpt.pth',
+                        default='checkpoint/baseline/vgg/vgg16.pth',
                         metavar='FILE',
                         help='path to load checkpoint',
                         )
     parser.add_argument('--criteria',
-                        default=['L0_norm', 'L1_norm', 'L2_norm', 'inf_norm',
-                                 'cosine_sim', 'Pearson_sim',
+                        default=['cosine_sim', 'Pearson_sim',
                                  'Euclide_dis', 'Manhattan_dis', 'SNR_dis'],
                         type=str,
                         nargs='+',
@@ -47,8 +42,14 @@ def get_parser():
                         nargs='+',
                         help='filter ranking strategy'
                         )
+    parser.add_argument('--decomposer',
+                        default=['full', 'svd', 'hosvd'],
+                        type=str,
+                        nargs='+',
+                        help='tensor decomposer'
+                        )
     parser.add_argument('--calculated_rank',
-                        default='calculation/baseline/vgg/rank.json',
+                        default='calculation/baseline/vgg/rank_vgg16.json',
                         help='path to load pre-calculated rank file',
                         )
     parser.add_argument('--output',
@@ -68,7 +69,7 @@ def get_parser():
                         help='Number of finetuning epochs',
                         )
     parser.add_argument('--log_file',
-                        default='logs/log_main.txt',
+                        default='logs/log_main_vgg16.txt',
                         help='path to log file',
                         )
 
@@ -78,7 +79,8 @@ def get_parser():
 def get_model_performance(model, dataloader, criterion):
     """Caculate model's performance
     """
-    accuracy = round(evaluate(model, dataloader['test'], criterion, 'cuda'), 2)
+    accuracy = round(evaluate(
+        model, dataloader['test'], criterion, device='cuda', verbose=False), 2)
     size = round(get_model_size(model) / MiB, 2)
 
     # measure on cpu to simulate inference on an edge device
@@ -111,26 +113,23 @@ if __name__ == "__main__":
     start_epoch = 0
 
     net = None
-    if (args.net == "ResNet18"):
-        net = ResNet18()
-    elif 'VGG' in args.net:
-        net = VGG(args.net)
-    else:
-        net = VGG('VGG19')
+    if 'ResNet' in args.arch:
+        net = getResNet(args.arch)
+    elif 'VGG' in args.arch:
+        net = VGG(args.arch)
     net = net.to(device)
 
-    if args.resume:
-        assert os.path.isfile(args.checkpoint), "Checkpoint not found!"
-        logging.info(f"=> loading checkpoint '{args.checkpoint}'")
-        checkpoint = torch.load(args.checkpoint)
-        # load net without DataParallel
-        net_state_dict = OrderedDict()
-        for k, v in checkpoint['net'].items():
-            name = k[7:]  # remove `module.`
-            net_state_dict[name] = v
-        net.load_state_dict(net_state_dict)
-        best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch']
+    assert os.path.isfile(args.checkpoint), "Checkpoint not found!"
+    logging.info(f"=> loading checkpoint '{args.checkpoint}'")
+    checkpoint = torch.load(args.checkpoint)
+    # load net without DataParallel
+    net_state_dict = OrderedDict()
+    for k, v in checkpoint['net'].items():
+        name = k[7:]  # remove `module.`
+        net_state_dict[name] = v
+    net.load_state_dict(net_state_dict)
+    best_acc = checkpoint['acc']
+    start_epoch = checkpoint['epoch']
 
     logging.info("Baseline model performance: \n" +
                  "accuracy (%), size (Mb), latency (ms), macs (M), num_params (M)"
@@ -150,63 +149,71 @@ if __name__ == "__main__":
     f = open(args.calculated_rank, 'r')
     data = json.loads(f.read())
 
-    pruned_acc_strategy = {}
-    finetuned_acc_strategy = {}
+    pruned_acc_strategy = {s: {} for s in args.strategy}
+    finetuned_acc_strategy = {s: {} for s in args.strategy}
     for strategy in args.strategy:
         logging.info(f"------------------{strategy}------------------")
-        pruned_accuracy_dict = {c: [] for c in args.criteria}
-        finetuned_best_acc_dict = {c: [] for c in args.criteria}
-        for criteria in args.criteria:
-            logging.info(f"---------------{criteria}---------------")
-            sort_idx_dict = data[strategy]['sort_idx'][criteria]
-            sorted_net = apply_channel_sorting(net, sort_idx_dict)
-            for channel_pruning_ratio in tqdm(channel_pruning_ratios):
-                pruned_net = channel_prune(sorted_net, channel_pruning_ratio)
-                pruned_net_accuracy = evaluate(pruned_net,
-                                               dataloader['test'],
-                                               criterion,
-                                               device
-                                               )
+        for decomposer in args.decomposer:
+            logging.info(f"------------------{decomposer}------------------")
+            pruned_accuracy_dict = {c: [] for c in args.criteria}
+            finetuned_best_acc_dict = {c: [] for c in args.criteria}
+            for criteria in args.criteria:
+                logging.info(f"---------------{criteria}---------------")
+                sort_idx_dict = data[strategy][decomposer]['sort_idx'][criteria]
+                sorted_net = apply_channel_sorting(net, sort_idx_dict)
+                for channel_pruning_ratio in tqdm(channel_pruning_ratios):
+                    pruned_net = channel_prune(
+                        sorted_net, channel_pruning_ratio)
+                    pruned_net_accuracy = evaluate(pruned_net,
+                                                   dataloader['test'],
+                                                   criterion,
+                                                   device,
+                                                   verbose=False
+                                                   )
 
-                logging.info(f"pruned_net_acc = {pruned_net_accuracy:.2f}%")
-                pruned_accuracy_dict[criteria].append(
-                    round((pruned_net_accuracy), 2))
+                    logging.info(
+                        f"channel_pruning_ratio {channel_pruning_ratio}, pruned_net_acc = {pruned_net_accuracy:.2f}%")
+                    pruned_accuracy_dict[criteria].append(
+                        round((pruned_net_accuracy), 2))
 
-                # finetune then save
-                optimizer = torch.optim.SGD(pruned_net.parameters(),
-                                            lr=args.lr,
-                                            momentum=0.9,
-                                            weight_decay=1e-4
-                                            )
-                scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
-                                                                       args.num_finetune_epochs)
+                    # finetune then save
+                    optimizer = torch.optim.SGD(pruned_net.parameters(),
+                                                lr=args.lr,
+                                                momentum=0.9,
+                                                weight_decay=1e-4
+                                                )
+                    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                                           args.num_finetune_epochs)
 
-                finetuned_best_accuracy = 0
-                for epoch in tqdm(range(start_epoch, start_epoch + num_finetune_epochs)):
-                    train(pruned_net, dataloader['train'],
-                          criterion, optimizer, scheduler, device)
-                    acc = evaluate(pruned_net, dataloader['test'],
-                                   criterion, device)
+                    finetuned_best_accuracy = 0
+                    for epoch in range(start_epoch, start_epoch + num_finetune_epochs):
+                        logging.info(
+                            f"---------------finetuning epoch = {epoch}---------------")
+                        train(pruned_net, dataloader['train'],
+                              criterion, optimizer, scheduler, device)
+                        acc = evaluate(pruned_net, dataloader['test'],
+                                       criterion, device, verbose=False)
 
-                    # save checkpoint if acc > best_acc
-                    if acc > finetuned_best_accuracy:
-                        state = {'net': net.state_dict(),
-                                 'acc': acc,
-                                 'epoch': epoch,
-                                 }
-                        path_save_net = os.path.join(args.output,
-                                                     f"{criteria}_{channel_pruning_ratio}.pth")
-                        torch.save(state, path_save_net)
-                        finetuned_best_accuracy = acc
+                        # save checkpoint if acc > best_acc
+                        if acc > finetuned_best_accuracy:
+                            state = {'net': net.state_dict(),
+                                     'acc': acc,
+                                     'epoch': epoch,
+                                     }
+                            path_save_net = os.path.join(args.output,
+                                                         f"{criteria}_{channel_pruning_ratio}.pth")
+                            torch.save(state, path_save_net)
+                            finetuned_best_accuracy = acc
 
-                finetuned_best_acc_dict[criteria].append(
-                    round((finetuned_best_accuracy), 2))
+                    finetuned_best_acc_dict[criteria].append(
+                        round((finetuned_best_accuracy), 2))
 
-                logging.info(get_model_performance(
-                    pruned_net, dataloader, criterion))
+                    if int(100*channel_pruning_ratio) % 10 == 0:
+                        logging.info(get_model_performance(
+                            pruned_net, dataloader, criterion))
 
-        pruned_acc_strategy[strategy] = pruned_accuracy_dict
-        finetuned_acc_strategy[strategy] = finetuned_best_acc_dict
+            pruned_acc_strategy[strategy][decomposer] = pruned_accuracy_dict
+            finetuned_acc_strategy[strategy][decomposer] = finetuned_best_acc_dict
 
     logging.info(pruned_acc_strategy)
     logging.info(finetuned_acc_strategy)

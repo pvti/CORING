@@ -3,9 +3,10 @@ import os
 import argparse
 import json
 from tqdm.auto import tqdm
+import torch
 
 from similarity import similarity
-from decompose import get_num_unfold
+from .decompose import get_num_unfold
 
 
 def get_parser():
@@ -20,15 +21,15 @@ def get_parser():
                         help='correlation'
                         )
     parser.add_argument('--input',
-                        default='calculation/baseline/vgg/decomposition.json',
+                        default='calculation/baseline/vgg/decomposition_vgg16.json',
                         help='path to load calculated decomposition file',
                         )
     parser.add_argument('--output',
-                        default='calculation/baseline/vgg/criteria_decomposition.json',
+                        default='calculation/baseline/vgg/correlation_decomposition_vgg16.json',
                         help='path to save calculation',
                         )
     parser.add_argument('--log_file',
-                        default='logs/calculation_criteria_decomposition.txt',
+                        default='logs/calculation_correlation_decomposition.txt',
                         help='path to log file',
                         )
 
@@ -41,7 +42,7 @@ def get_correlation_mat(all_filters_u_dict, decomposer, criterion):
     """
     num_filters = len(all_filters_u_dict)
     # torch.zeros(num_filters, num_filters)
-    correlation_matrix = [[0.]*num_filters for i in range(num_filters)]
+    correlation_mat = [[0.]*num_filters for i in range(num_filters)]
     num_unfold = get_num_unfold(decomposer)
 
     # compute the channel pairwise similarity based on criterion
@@ -51,10 +52,13 @@ def get_correlation_mat(all_filters_u_dict, decomposer, criterion):
             uj = all_filters_u_dict[str(j)]
             sum = 0.
             for x in range(num_unfold):
-                sum += similarity(ui[x], uj[x], criterion)
-            correlation_matrix[i][j] = (sum/num_unfold).item()
+                sum += similarity(torch.tensor(ui[x]),
+                                  torch.tensor(uj[x]),
+                                  criterion
+                                  )
+            correlation_mat[i][j] = (sum/num_unfold).item()
 
-    return correlation_matrix
+    return correlation_mat
 
 
 if __name__ == "__main__":
@@ -67,13 +71,13 @@ if __name__ == "__main__":
                         )
     logging.info("Arguments: " + str(args))
 
-    # load pre-calculated sort idx
+    # load pre-calculated decomposition
     logging.info(f"=> loading '{args.input}'")
     f = open(args.input, 'r+')
     data = json.loads(f.read())
     dict = {
         "input": args.input,
-        "net": data["net"],
+        "net": data["arch"],
         "checkpoint": data["checkpoint"]
     }
 
@@ -93,7 +97,7 @@ if __name__ == "__main__":
             correlation_dict[criterion] = all_convs_cor_mat
         decomposition_dict[decomposer] = correlation_dict
 
-    dict["decomposition"] = decomposition_dict
+    dict["correlation"] = decomposition_dict
 
     with open(args.output, 'w+') as file:
         logging.info(f"=> dumping to {args.output}")

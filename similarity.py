@@ -12,7 +12,7 @@ def cosine(a, b):
     """Caculate cosine similarity
     """
 
-    return abs(cos(torch.flatten(a), torch.flatten(b)))
+    return cos(torch.flatten(a), torch.flatten(b))
 
 
 def Euclide(a, b):
@@ -99,12 +99,10 @@ def hosvd(x, y):
 
 def similarity(a, b, criterion):
     """Calculate similarity based on criterion
-        a, b: list
+        a, b: tensor 1d or 3d
     """
-    a = torch.tensor(a)
-    b = torch.tensor(b)
     if criterion == 'cosine_sim':
-        return cos(a, b)
+        return abs(cosine(a, b))
 
     elif criterion == 'Euclide_dis':
         return Euclide(a, b)
@@ -113,7 +111,7 @@ def similarity(a, b, criterion):
         return Manhattan(a, b)
 
     elif criterion == 'Pearson_sim':
-        return pearson_corrcoef(a, b)
+        return Pearson(a, b)
 
     elif criterion == 'SNR_dis':
         return SNR(a, b)
