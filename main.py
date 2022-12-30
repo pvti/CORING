@@ -136,11 +136,11 @@ if __name__ == "__main__":
                  )
     logging.info(get_model_performance(net, dataloader, criterion))
 
-    channel_pruning_ratios = np.arange(args.prune_range[0],
-                                       args.prune_range[1],
-                                       args.prune_range[2]
-                                       )
-    channel_pruning_ratios = np.around(channel_pruning_ratios, 2)
+    prune_ratios = np.arange(args.prune_range[0],
+                             args.prune_range[1],
+                             args.prune_range[2]
+                             )
+    prune_ratios = np.around(prune_ratios, 2)
 
     num_finetune_epochs = args.num_finetune_epochs
 
@@ -161,9 +161,9 @@ if __name__ == "__main__":
                 logging.info(f"---------------{criteria}---------------")
                 sort_idx_dict = data[strategy][decomposer]['sort_idx'][criteria]
                 sorted_net = apply_channel_sorting(net, sort_idx_dict)
-                for channel_pruning_ratio in tqdm(channel_pruning_ratios):
+                for prune_ratio in tqdm(prune_ratios):
                     pruned_net = channel_prune(
-                        sorted_net, channel_pruning_ratio)
+                        sorted_net, prune_ratio)
                     pruned_net_accuracy = evaluate(pruned_net,
                                                    dataloader['test'],
                                                    criterion,
@@ -172,7 +172,7 @@ if __name__ == "__main__":
                                                    )
 
                     logging.info(
-                        f"channel_pruning_ratio {channel_pruning_ratio}, pruned_net_acc = {pruned_net_accuracy:.2f}%")
+                        f"prune_ratio {prune_ratio}, pruned_net_acc = {pruned_net_accuracy:.2f}%")
                     pruned_accuracy_dict[criteria].append(
                         round((pruned_net_accuracy), 2))
 
@@ -196,19 +196,21 @@ if __name__ == "__main__":
 
                         # save checkpoint if acc > best_acc
                         if acc > finetuned_best_accuracy:
+                            '''
                             state = {'net': net.state_dict(),
                                      'acc': acc,
                                      'epoch': epoch,
                                      }
                             path_save_net = os.path.join(args.output,
-                                                         f"{criteria}_{channel_pruning_ratio}.pth")
+                                                         f"{criteria}_{prune_ratio}.pth")
                             torch.save(state, path_save_net)
+                            '''
                             finetuned_best_accuracy = acc
 
                     finetuned_best_acc_dict[criteria].append(
                         round((finetuned_best_accuracy), 2))
 
-                    if int(100*channel_pruning_ratio) % 10 == 0:
+                    if int(100*prune_ratio) % 10 == 0:
                         logging.info(get_model_performance(
                             pruned_net, dataloader, criterion))
 
