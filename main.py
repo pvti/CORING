@@ -11,6 +11,7 @@ from helpers import *
 from models import *
 from pruner import channel_prune, apply_channel_sorting
 from train import train, evaluate
+from miscellaneous.plot import plot_decomposer
 
 
 def get_parser():
@@ -219,3 +220,13 @@ if __name__ == "__main__":
 
     logging.info(pruned_acc_strategy)
     logging.info(finetuned_acc_strategy)
+
+    # Plot decomposers comparison
+    for strategy, strategy_dict in pruned_acc_strategy.items():
+        path = os.path.join('figures/decomposer/pruned/', strategy + '.png')
+        logging.info(f"=> Saving figure '{path}'")
+        plot_decomposer(strategy_dict, prune_ratios, path)
+    for strategy, strategy_dict in finetuned_acc_strategy.items():
+        path = os.path.join('figures/decomposer/finetuned/', strategy + '.png')
+        logging.info(f"=> Saving figure '{path}'")
+        plot_decomposer(strategy_dict, prune_ratios, path)

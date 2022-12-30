@@ -87,9 +87,39 @@ def plot_comparision():
     plt.savefig('compare_02.png', dpi=1200)
 
 
+def plot_decomposer(dict, ratio, output):
+    """Compare full vs svd+
+    """
+    criteria_dict = {criterion: {decomposer: [] for decomposer in dict.keys()}
+                     for criterion in dict['full'].keys()
+                     }
+    for decomposer, decomp_dict in dict.items():
+        for criterion, acc in decomp_dict.items():
+            criteria_dict[criterion][decomposer] = acc
+
+    plot_size = len(criteria_dict)
+    fig, axes = plt.subplots(round(plot_size/3), 3, figsize=(10, 6))
+    axes = axes.ravel()
+    plot_index = 0
+    for criterion, criterion_dict in criteria_dict.items():
+        ax = axes[plot_index]
+        for decomposer, acc in criterion_dict.items():
+            ax.plot(ratio, acc, label=decomposer)
+        ax.set_title(criterion)
+        plot_index += 1
+        ax.legend()
+
+    fig.suptitle('Decomposer comparison')
+    fig.tight_layout()
+    plt.xlabel('ratio')
+    plt.ylabel('accuracy')
+    plt.savefig(output)
+
+
 if __name__ == "__main__":
     plt.figure(dpi=1200)
 
+    '''
     # Plot norm num_finetune_epochs = 10
     ratio = np.around(np.arange(0.01, 0.51, 0.01), 2)
     pruned_accuracy_dict = {
@@ -106,3 +136,13 @@ if __name__ == "__main__":
     }
     plot_pruned_finetuned(
         pruned_accuracy_dict, finetuned_best_acc_dict, ratio, 'figures/norm_pruned_finetuned.png')
+    '''
+
+    # Plot decomposer comparisons
+    ratio = np.around(np.arange(0.01, 0.11, 0.05), 2)
+    sum_dict = {
+        'full': {'cosine_sim': [93.54, 88.44], 'Pearson_sim': [93.54, 85.08], 'Euclide_dis': [93.92, 92.0], 'Manhattan_dis': [93.94, 91.95], 'SNR_dis': [90.92, 50.5]},
+        'svd': {'cosine_sim': [93.42, 87.48], 'Pearson_sim': [93.56, 87.56], 'Euclide_dis': [93.67, 88.51], 'Manhattan_dis': [92.99, 88.78], 'SNR_dis': [93.76, 88.28]},
+        'hosvd': {'cosine_sim': [93.16, 89.58], 'Pearson_sim': [93.62, 89.85], 'Euclide_dis': [93.91, 89.63], 'Manhattan_dis': [92.64, 87.5], 'SNR_dis': [91.32, 72.82]}
+    }
+    plot_decomposer(sum_dict, ratio, "sum_decomposer.png")
