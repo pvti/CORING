@@ -1,7 +1,7 @@
 import torch
 
 
-def fine_grained_prune(tensor: torch.Tensor, sparsity : float) -> torch.Tensor:
+def fine_grained_prune(tensor: torch.Tensor, sparsity: float) -> torch.Tensor:
     """
     magnitude-based pruning for single tensor
     :param tensor: torch.(cuda.)Tensor, weight of conv/fc layer
