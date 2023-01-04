@@ -198,7 +198,7 @@ if __name__ == "__main__":
                         # save checkpoint if acc > best_acc
                         if acc > finetuned_best_accuracy:
                             '''
-                            state = {'net': net.state_dict(),
+                            state = {'net': pruned_net.state_dict(),
                                      'acc': acc,
                                      'epoch': epoch,
                                      }
