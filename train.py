@@ -12,6 +12,7 @@ import os
 import argparse
 import numpy as np
 from tqdm.auto import tqdm
+import wandb
 
 from data import *
 from models import *
@@ -50,6 +51,11 @@ def get_parser():
     parser.add_argument("--log_file",
                         default="logs/log_train.txt",
                         help="path to log file",
+                        )
+    parser.add_argument('--wandb_name',
+                        default='vgg16_train',
+                        type=str,
+                        help='name of wandb run'
                         )
 
     return parser
@@ -131,6 +137,10 @@ if __name__ == "__main__":
                                   ]
                         )
     logging.info("Arguments: " + str(args))
+    wandb.init(name=args.wandb_name,
+               project='HOSVD_Pruning',
+               config={**vars(args)}
+               )
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     best_acc = 0
     start_epoch = 0
@@ -185,7 +195,6 @@ if __name__ == "__main__":
                        criterion,
                        device
                        )
-        logging.info(f"epoch {epoch}:, {round(acc, 2)}")
 
         # save checkpoint if acc > best_acc
         if acc > best_acc:
@@ -196,3 +205,6 @@ if __name__ == "__main__":
                      }
             torch.save(state, args.output)
             best_acc = acc
+
+        cur_lr = optimizer.param_groups[0]["lr"]
+        wandb.log({'acc': acc, 'best_acc': best_acc, 'lr': cur_lr})
