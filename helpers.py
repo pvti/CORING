@@ -73,3 +73,19 @@ def measure_latency(model, dummy_input, n_warmup=20, n_test=100):
         _ = model(dummy_input)
     t2 = time.time()
     return (t2 - t1) / n_test  # average latency
+
+
+def get_model_performance(model):
+    """Caculate model's performance
+    """
+    num_params = round(get_num_parameters(model) / 1e6, 2)  # in million
+    size = round(get_model_size(model) / MiB, 2)
+    # measure on cpu to simulate inference on an edge device
+    ori_device = next(model.parameters()).device
+    dummy_input = torch.randn(1, 3, 32, 32).to('cpu')
+    model = model.to('cpu')
+    latency = round(measure_latency(model, dummy_input) * 1000, 1)  # in ms
+    macs = round(get_model_macs(model, dummy_input) / 1e6)  # in million
+    model = model.to(ori_device)
+
+    return size, latency, macs, num_params

@@ -7,7 +7,7 @@ from collections import OrderedDict
 import json
 
 from data import *
-from helpers import *
+from helpers import get_model_performance
 from models import *
 from pruner import channel_prune, apply_channel_sorting
 from train import train, evaluate
@@ -77,24 +77,6 @@ def get_parser():
     return parser
 
 
-def get_model_performance(model, dataloader, criterion):
-    """Caculate model's performance
-    """
-    accuracy = round(evaluate(
-        model, dataloader['test'], criterion, device='cuda', verbose=False), 2)
-    size = round(get_model_size(model) / MiB, 2)
-
-    # measure on cpu to simulate inference on an edge device
-    dummy_input = torch.randn(1, 3, 32, 32).to('cpu')
-    model = model.to('cpu')
-    latency = round(measure_latency(model, dummy_input) * 1000, 1)  # in ms
-    macs = round(get_model_macs(model, dummy_input) / 1e6)  # in million
-    num_params = round(get_num_parameters(model) / 1e6, 2)  # in million
-    model = model.to('cuda')
-
-    return accuracy, size, latency, macs, num_params
-
-
 if __name__ == "__main__":
     args = get_parser().parse_args()
     logging.basicConfig(level=logging.INFO,
@@ -132,10 +114,8 @@ if __name__ == "__main__":
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
 
-    logging.info("Baseline model performance: \n" +
-                 "accuracy (%), size (Mb), latency (ms), macs (M), num_params (M)"
-                 )
-    logging.info(get_model_performance(net, dataloader, criterion))
+    logging.info(
+        f'Baseline model: best_acc (%) = {best_acc} size (Mb), latency (ms), macs (M), num_params (M) = {get_model_performance(net)}')
 
     prune_ratios = np.arange(args.prune_range[0],
                              args.prune_range[1],
@@ -157,14 +137,13 @@ if __name__ == "__main__":
         for decomposer in args.decomposer:
             logging.info(f"------------------{decomposer}------------------")
             pruned_accuracy_dict = {c: [] for c in args.criteria}
-            finetuned_best_acc_dict = {c: [] for c in args.criteria}
+            ft_best_acc_dict = {c: [] for c in args.criteria}
             for criteria in args.criteria:
                 logging.info(f"---------------{criteria}---------------")
                 sort_idx_dict = data[strategy][decomposer]['sort_idx'][criteria]
                 sorted_net = apply_channel_sorting(net, sort_idx_dict)
                 for prune_ratio in tqdm(prune_ratios):
-                    pruned_net = channel_prune(
-                        sorted_net, prune_ratio)
+                    pruned_net = channel_prune(sorted_net, prune_ratio)
                     pruned_net_accuracy = evaluate(pruned_net,
                                                    dataloader['test'],
                                                    criterion,
@@ -186,17 +165,17 @@ if __name__ == "__main__":
                     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
                                                                            args.num_finetune_epochs)
 
-                    finetuned_best_accuracy = 0
+                    ft_best_acc = 0
                     for epoch in range(start_epoch, start_epoch + num_finetune_epochs):
                         logging.info(
                             f"---------------finetuning epoch = {epoch}---------------")
                         train(pruned_net, dataloader['train'],
                               criterion, optimizer, scheduler, device)
                         acc = evaluate(pruned_net, dataloader['test'],
-                                       criterion, device, verbose=False)
+                                       criterion, device)
 
                         # save checkpoint if acc > best_acc
-                        if acc > finetuned_best_accuracy:
+                        if acc > ft_best_acc:
                             '''
                             state = {'net': pruned_net.state_dict(),
                                      'acc': acc,
@@ -206,17 +185,16 @@ if __name__ == "__main__":
                                                          f"{criteria}_{prune_ratio}.pth")
                             torch.save(state, path_save_net)
                             '''
-                            finetuned_best_accuracy = acc
+                            ft_best_acc = acc
 
-                    finetuned_best_acc_dict[criteria].append(
-                        round((finetuned_best_accuracy), 2))
+                    ft_best_acc_dict[criteria].append(round((ft_best_acc), 2))
 
                     if int(100*prune_ratio) % 10 == 0:
-                        logging.info(get_model_performance(
-                            pruned_net, dataloader, criterion))
+                        logging.info(
+                            f'Finetune pruned model: ft_best_acc (%) = {ft_best_acc} size (Mb), latency (ms), macs (M), num_params (M) = {get_model_performance(pruned_net)}')
 
             pruned_acc_strategy[strategy][decomposer] = pruned_accuracy_dict
-            finetuned_acc_strategy[strategy][decomposer] = finetuned_best_acc_dict
+            finetuned_acc_strategy[strategy][decomposer] = ft_best_acc_dict
 
     logging.info(pruned_acc_strategy)
     logging.info(finetuned_acc_strategy)
