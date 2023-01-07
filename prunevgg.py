@@ -8,7 +8,6 @@ import torch
 from data import DataLoaderCIFAR10
 from helpers import get_model_performance
 from models import VGG
-from miscellaneous.plot import plot_decomposer
 from pruner import apply_channel_sorting, channel_prune
 from config.default import pruning_types
 from train import evaluate
