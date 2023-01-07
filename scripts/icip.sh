@@ -1,1 +1,1 @@
-python prunevgg.py --decomposer hosvd --criteria cosine_sim --strategy min_sum
+python prunevgg.py --decomposer hosvd --criteria cosine_sim Euclide_dis --strategy min_sum
