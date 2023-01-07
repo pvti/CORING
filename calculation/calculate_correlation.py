@@ -24,7 +24,7 @@ def get_parser():
                         )
     parser.add_argument('--correlation',
                         default=['cosine_sim', 'Pearson_sim',
-                                 'Euclide_dis', 'Manhattan_dis', 'SNR_dis'
+                                 'Euclide_dis', 'Manhattan_dis', 'SNR_dis', 'VBD_dis'
                                  ],
                         type=str,
                         nargs='+',

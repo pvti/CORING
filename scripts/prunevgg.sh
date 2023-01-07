@@ -1,0 +1,1 @@
+python prunevgg.py --decomposer hosvd --criteria cosine_sim Euclide_dis VBD_dis

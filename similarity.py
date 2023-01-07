@@ -1,6 +1,5 @@
 import torch
 from torchmetrics.functional import pearson_corrcoef
-from torchmetrics import SignalNoiseRatio
 import tensorly as tl
 from tensorly import unfold
 
@@ -36,21 +35,19 @@ def Pearson(a, b):
     return pearson_corrcoef(torch.flatten(a), torch.flatten(b))
 
 
-'''
-def SNR(signal, noise):
-    """Caculate signal to noise ratio
-    """
-    snr = SignalNoiseRatio().to(0)
-
-    return snr(signal, noise)
-'''
-
-
 def SNR(signal, noise):
     """Caculate signal to noise ratio
     """
 
     return torch.var(signal-noise) / torch.var(signal)
+
+
+def VBD(a, b):
+    """Caculate variance based distance
+    """
+    vbd = torch.var(a-b) / (torch.var(a) + torch.var(b))
+
+    return vbd
 
 
 def get_u_svd(x):
@@ -115,3 +112,6 @@ def similarity(a, b, criterion):
 
     elif criterion == 'SNR_dis':
         return SNR(a, b)
+
+    elif criterion == 'VBD_dis':
+        return VBD(a, b)
