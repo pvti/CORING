@@ -9,7 +9,7 @@ from data import DataLoaderCIFAR10
 from helpers import get_model_performance
 from models import VGG
 from pruner import apply_channel_sorting, channel_prune
-from config.default import pruning_types
+from config.default import pruning_types, pruning_cfg
 from train import evaluate
 
 
@@ -70,6 +70,7 @@ def main(args):
         net_state_dict[name] = v
     net.load_state_dict(net_state_dict)
     best_acc = checkpoint['acc']
+    epoch = checkpoint['epoch']
     logging.info(f'Baseline model: best_acc (%) = {best_acc} size (Mb), latency (ms), macs (M), num_params (M) = '
                  f'{get_model_performance(net)}')
 
@@ -115,8 +116,10 @@ def main(args):
 
                     # Save the pruned model
                     state = {
+                        'cfg': pruning_cfg[prune_type],
                         'net': net_pruned.state_dict(),
                         'acc': acc,
+                        'epoch': epoch,
                         'decomposer': decomposer,
                         'criteria': criteria,
                         'strategy': strategy,

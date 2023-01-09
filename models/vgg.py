@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 
-cfg = {
+default_cfg = {
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'VGG16': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
@@ -12,9 +12,14 @@ cfg = {
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name):
+    def __init__(self, vgg_name='VGG16', cfg=None):
         super(VGG, self).__init__()
-        self.backbone = self._make_layers(cfg[vgg_name])
+
+        if cfg is None:
+            cfg = default_cfg[vgg_name]
+        self.cfg = cfg
+
+        self.backbone = self._make_layers(cfg)
         self.avgpool = nn.AvgPool2d(kernel_size=1, stride=1)
         self.classifier = nn.Linear(512, 10)
 
@@ -43,7 +48,7 @@ class VGG(nn.Module):
 
 def test():
     net = VGG('VGG11')
-    x = torch.randn(2,3,32,32)
+    x = torch.randn(2, 3, 32, 32)
     y = net(x)
     print(y.size())
 
