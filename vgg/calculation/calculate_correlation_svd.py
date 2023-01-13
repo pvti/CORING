@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 import torch
 
 from similarity import similarity
-from .decompose import get_num_unfold
+from decompose import get_num_unfold
 
 
 def get_parser():
