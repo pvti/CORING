@@ -7,7 +7,7 @@ import argparse
 import json
 import numpy as np
 
-from .ranking_strategy import get_saliency
+from ranking_strategy import get_saliency
 
 
 def get_parser():

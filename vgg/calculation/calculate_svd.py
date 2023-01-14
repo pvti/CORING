@@ -7,7 +7,7 @@ import json
 import torch
 
 from models import *
-from .decompose import decompose
+from decompose import decompose
 
 
 def get_parser():

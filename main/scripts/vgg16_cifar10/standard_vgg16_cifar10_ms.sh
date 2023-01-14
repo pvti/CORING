@@ -1,5 +1,5 @@
-# generate rank for all combinations
-for strategy in min_min min_sum sum
+# loop over all combinations
+for strategy in min_sum
 do
     for criterion in VBD_dis cosine_sim Euclide_dis SNR_dis Pearson_sim Manhattan_dis  
         do

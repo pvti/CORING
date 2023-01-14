@@ -23,8 +23,8 @@ import utils.common as utils
 import sys
 sys.path.append(os.path.dirname('..'))
 from similarity import similarity
-from calculation.ranking_strategy import get_saliency
-from calculation.decompose import decompose
+from ranking_strategy import get_saliency
+from decompose import decompose
 
 
 parser = argparse.ArgumentParser("Rank generation")
