@@ -36,17 +36,17 @@ parser.add_argument(
 parser.add_argument(
     '--job_dir',
     type=str,
-    default='resnet/result/hrankplus/resnet_56/standard',
+    default='result/hrankplus/resnet_56/standard',
     help='path for saving trained models')
 parser.add_argument(
     '--pretrain_dir',
     type=str,
-    default='./resnet/checkpoint/cifar/cifar10/resnet_56.pt',
+    default='checkpoint/cifar/cifar10/resnet_56.pt',
     help='pretrain model path')
 parser.add_argument(
     '--rank_conv_prefix',
     type=str,
-    default='./resnet/hosvd_rank_conv/',
+    default='rank',
     help='rank conv file folder')
 parser.add_argument(
     '--gpu',
