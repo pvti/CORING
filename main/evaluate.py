@@ -28,13 +28,13 @@ parser = argparse.ArgumentParser("ImageNet training")
 parser.add_argument(
     '--data_dir',
     type=str,
-    default='',
+    default='data/imagenet/',
     help='path to dataset')
 
 parser.add_argument(
     '--arch',
     type=str,
-    default='resnet_56',
+    default='resnet_50',
     help='architecture')
 
 parser.add_argument(
@@ -58,7 +58,7 @@ parser.add_argument(
 parser.add_argument(
     '--learning_rate',
     type=float,
-    default=0.1,
+    default=0.01,
     help='init learning rate')
 
 '''parser.add_argument(
@@ -76,7 +76,7 @@ parser.add_argument(
 parser.add_argument(
     '--momentum',
     type=float,
-    default=0.9,
+    default=0.99,
     help='momentum')
 
 parser.add_argument(
