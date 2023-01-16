@@ -17,6 +17,7 @@ from models.cifar10.vgg import vgg_16_bn
 from models.cifar10.resnet import resnet_56, resnet_110
 from models.cifar10.googlenet import googlenet, Inception
 from models.cifar10.densenet import densenet_40
+from models.imagenet.resnet import resnet_50
 
 import utils.common as utils
 
@@ -121,7 +122,7 @@ def get_rank(weight):
     """Get rank based on HOSVD+VBD+min_sum"""
     num_filters = weight.shape[1]
     all_filters_u_dict = {}
-    for i_filter in range(num_filters):
+    for i_filter in tqdm(range(num_filters)):
         filter = weight.detach()[:, i_filter]
         u = decompose(filter, decomposer='hosvd')
         all_filters_u_dict[i_filter] = [i.tolist() for i in u]
@@ -499,6 +500,39 @@ def load_densenet_model(model, oristate_dict):
     model.load_state_dict(state_dict)
 
 
+def rank_resnet50(state_dict):
+    cfg = {'resnet_50': [3, 4, 6, 3],}
+    current_cfg = cfg[args.arch]
+
+    cnt=1
+    conv_weight_name = 'conv1.weight'
+    weight = state_dict[conv_weight_name]
+    rank = get_rank(weight)
+    save(rank, cnt)
+
+    cnt+=1
+    for layer, num in enumerate(current_cfg):
+        layer_name = 'layer' + str(layer + 1) + '.'
+
+        for k in range(num):
+            iter = 3
+            if k==0:
+                iter +=1
+            for l in range(iter):
+                if k==0 and l==2:
+                    conv_name = layer_name + str(k) + '.downsample.0'
+                elif k==0 and l==3:
+                    conv_name = layer_name + str(k) + '.conv' + str(l)
+                else:
+                    conv_name = layer_name + str(k) + '.conv' + str(l + 1)
+
+                conv_weight_name = conv_name + '.weight'
+                weight = state_dict[conv_weight_name]
+                rank = get_rank(weight)
+                save(rank, cnt)
+                cnt += 1
+
+
 def main():
     cudnn.benchmark = True
     cudnn.enabled = True
@@ -506,30 +540,36 @@ def main():
 
     logger.info(f'Loading pretrain model: {args.pretrain_dir}')
     model = eval(args.arch)(compress_rate=[0.] * 100).cuda()
-    ckpt = torch.load(args.pretrain_dir, map_location='cuda:0')
-
-    if args.arch == 'densenet_40' or args.arch == 'resnet_110':
-        new_state_dict = OrderedDict()
-        for k, v in ckpt['state_dict'].items():
-            new_state_dict[k.replace('module.', '')] = v
-        model.load_state_dict(new_state_dict)
+    if args.arch == 'resnet_50':
+        ckpt = torch.load(args.pretrain_dir)
+        model.load_state_dict(ckpt)
+        state_dict = model.state_dict()
+        rank_resnet50(state_dict)
     else:
-        model.load_state_dict(ckpt['state_dict'], strict=False)
+        ckpt = torch.load(args.pretrain_dir, map_location='cuda:0')
+        if args.arch == 'densenet_40' or args.arch == 'resnet_110':
 
-    state_dict = model.state_dict()
+            new_state_dict = OrderedDict()
+            for k, v in ckpt['state_dict'].items():
+                new_state_dict[k.replace('module.', '')] = v
+            model.load_state_dict(new_state_dict)
+        else:
+            model.load_state_dict(ckpt['state_dict'], strict=False)
 
-    if args.arch == 'googlenet':
-        load_google_model(model, state_dict)
-    elif args.arch == 'vgg_16_bn':
-        rank_vgg(model, state_dict)
-    elif args.arch == 'resnet_56':
-        rank_resnet(state_dict, 56)
-    elif args.arch == 'resnet_110':
-        rank_resnet(state_dict, 110)
-    elif args.arch == 'densenet_40':
-        load_densenet_model(model, state_dict)
-    else:
-        raise ValueError("Not implemented arch")
+        state_dict = model.state_dict()
+
+        if args.arch == 'googlenet':
+            load_google_model(model, state_dict)
+        elif args.arch == 'vgg_16_bn':
+            rank_vgg(model, state_dict)
+        elif args.arch == 'resnet_56':
+            rank_resnet(state_dict, 56)
+        elif args.arch == 'resnet_110':
+            rank_resnet(state_dict, 110)
+        elif args.arch == 'densenet_40':
+            load_densenet_model(model, state_dict)
+        else:
+            raise ValueError("Not implemented arch")
 
 
 if __name__ == '__main__':
