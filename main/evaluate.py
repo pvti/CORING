@@ -1,7 +1,8 @@
 
 import os
 import numpy as np
-import time, datetime
+import time
+import datetime
 import torch
 import argparse
 import math
@@ -165,7 +166,7 @@ print_freq = 128000//args.batch_size
 if not os.path.isdir(args.job_dir):
     os.makedirs(args.job_dir)
 
-#save old training file
+# save old training file
 now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
 cp_file_dir = os.path.join(args.job_dir, 'cp_file/' + now)
 if os.path.exists(args.job_dir+'/model_best.pth.tar'):
@@ -176,7 +177,7 @@ if os.path.exists(args.job_dir+'/model_best.pth.tar'):
     shutil.copy(args.job_dir+'/model_best.pth.tar', cp_file_dir)
     shutil.copy(args.job_dir + '/checkpoint.pth.tar', cp_file_dir)
 
-#whether to override the logger file
+# whether to override the logger file
 if not args.resume:
     if os.path.exists(args.job_dir+'/logger.log'):
         os.remove(args.job_dir+'/logger.log')
@@ -184,18 +185,19 @@ if not args.resume:
 utils.record_config(args)
 logger = utils.get_logger(os.path.join(args.job_dir, 'logger.log'))
 
-#use for loading pretrain model
-if len(args.gpu)>1:
-    name_base='module.'
+# use for loading pretrain model
+if len(args.gpu) > 1:
+    name_base = 'module.'
 else:
-    name_base=''
+    name_base = ''
 
 # define rank folder
 prefix = os.path.join(args.rank_conv_prefix, args.arch,
-                    args.strategy, args.criterion,
-                    'rank_conv')
+                      args.strategy, args.criterion,
+                      'rank_conv')
 assert os.path.isdir(prefix), "Rank folder not found!"
 subfix = ".npy"
+
 
 def load_resnet_model(model, oristate_dict):
     cfg = {'resnet18': [2, 2, 2, 2],
@@ -211,8 +213,9 @@ def load_resnet_model(model, oristate_dict):
 
     all_honey_conv_weight = []
 
-    bn_part_name=['.weight','.bias','.running_mean','.running_var']#,'.num_batches_tracked']
-    cnt=1
+    bn_part_name = ['.weight', '.bias', '.running_mean',
+                    '.running_var']  # ,'.num_batches_tracked']
+    cnt = 1
 
     conv_weight_name = 'conv1.weight'
     all_honey_conv_weight.append(conv_weight_name)
@@ -224,7 +227,8 @@ def load_resnet_model(model, oristate_dict):
     if orifilter_num != currentfilter_num:
         logger.info('loading rank from: ' + prefix + str(cnt) + subfix)
         rank = np.load(prefix + str(cnt) + subfix)
-        select_index = np.argsort(rank)[orifilter_num - currentfilter_num:]  # preserved filter id
+        select_index = np.argsort(
+            rank)[orifilter_num - currentfilter_num:]  # preserved filter id
         select_index.sort()
 
         for index_i, i in enumerate(select_index):
@@ -238,11 +242,13 @@ def load_resnet_model(model, oristate_dict):
     else:
         state_dict[name_base + conv_weight_name] = oriweight
         for bn_part in bn_part_name:
-            state_dict[name_base + 'bn1' + bn_part] = oristate_dict['bn1'+bn_part]
+            state_dict[name_base + 'bn1' +
+                       bn_part] = oristate_dict['bn1'+bn_part]
 
-    state_dict[name_base + 'bn1' + '.num_batches_tracked'] = oristate_dict['bn1' + '.num_batches_tracked']
+    state_dict[name_base + 'bn1' +
+               '.num_batches_tracked'] = oristate_dict['bn1' + '.num_batches_tracked']
 
-    cnt+=1
+    cnt += 1
     for layer, num in enumerate(current_cfg):
         layer_name = 'layer' + str(layer + 1) + '.'
 
@@ -251,15 +257,15 @@ def load_resnet_model(model, oristate_dict):
                 iter = 2  # the number of convolution layers in a block, except for shortcut
             else:
                 iter = 3
-            if k==0:
-                iter +=1
+            if k == 0:
+                iter += 1
             for l in range(iter):
-                record_last=True
-                if k==0 and l==2:
+                record_last = True
+                if k == 0 and l == 2:
                     conv_name = layer_name + str(k) + '.downsample.0'
                     bn_name = layer_name + str(k) + '.downsample.1'
-                    record_last=False
-                elif k==0 and l==3:
+                    record_last = False
+                elif k == 0 and l == 3:
                     conv_name = layer_name + str(k) + '.conv' + str(l)
                     bn_name = layer_name + str(k) + '.bn' + str(l)
                 else:
@@ -274,9 +280,11 @@ def load_resnet_model(model, oristate_dict):
                 currentfilter_num = curweight.size(0)
 
                 if orifilter_num != currentfilter_num:
-                    logger.info('loading rank from: ' + prefix + str(cnt) + subfix)
+                    logger.info('loading rank from: ' +
+                                prefix + str(cnt) + subfix)
                     rank = np.load(prefix + str(cnt) + subfix)
-                    select_index = np.argsort(rank)[orifilter_num - currentfilter_num:]  # preserved filter id
+                    select_index = np.argsort(
+                        rank)[orifilter_num - currentfilter_num:]  # preserved filter id
                     select_index.sort()
 
                     if last_select_index is not None:
@@ -322,8 +330,9 @@ def load_resnet_model(model, oristate_dict):
                     if record_last:
                         last_select_index = None
 
-                state_dict[name_base + bn_name + '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
-                cnt+=1
+                state_dict[name_base + bn_name +
+                           '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
+                cnt += 1
 
     for name, module in model.named_modules():
         name = name.replace('module.', '')
@@ -333,10 +342,13 @@ def load_resnet_model(model, oristate_dict):
                 state_dict[name_base+conv_name] = oristate_dict[conv_name]
 
         elif isinstance(module, nn.Linear):
-            state_dict[name_base+name + '.weight'] = oristate_dict[name + '.weight']
-            state_dict[name_base+name + '.bias'] = oristate_dict[name + '.bias']
+            state_dict[name_base+name +
+                       '.weight'] = oristate_dict[name + '.weight']
+            state_dict[name_base+name +
+                       '.bias'] = oristate_dict[name + '.bias']
 
     model.load_state_dict(state_dict)
+
 
 def load_mobilenetv2_model(model, oristate_dict):
 
@@ -346,23 +358,23 @@ def load_mobilenetv2_model(model, oristate_dict):
 
     all_honey_conv_weight = []
 
-    bn_part_name=['.weight','.bias','.running_mean','.running_var']
+    bn_part_name = ['.weight', '.bias', '.running_mean', '.running_var']
     prefix = args.rank_conv_prefix+'/rank_conv'
     subfix = ".npy"
 
-    layer_cnt=1
-    conv_cnt=1
-    cfg=[1,2,3,4,3,3,1,1]
+    layer_cnt = 1
+    conv_cnt = 1
+    cfg = [1, 2, 3, 4, 3, 3, 1, 1]
     for layer, num in enumerate(cfg):
-        if layer_cnt==1:
-            conv_id=[0,3]
-        elif layer_cnt==18:
-            conv_id=[0]
+        if layer_cnt == 1:
+            conv_id = [0, 3]
+        elif layer_cnt == 18:
+            conv_id = [0]
         else:
-            conv_id=[0,3,6]
+            conv_id = [0, 3, 6]
 
         for k in range(num):
-            if layer_cnt==18:
+            if layer_cnt == 18:
                 block_name = 'features.' + str(layer_cnt) + '.'
             else:
                 block_name = 'features.'+str(layer_cnt)+'.conv.'
@@ -380,12 +392,14 @@ def load_mobilenetv2_model(model, oristate_dict):
                 currentfilter_num = curweight.size(0)
 
                 if orifilter_num != currentfilter_num:
-                    logger.info('loading rank from: ' + prefix + str(conv_cnt) + subfix)
+                    logger.info('loading rank from: ' +
+                                prefix + str(conv_cnt) + subfix)
                     rank = np.load(prefix + str(conv_cnt) + subfix)
-                    select_index = np.argsort(rank)[orifilter_num - currentfilter_num:]  # preserved filter id
+                    select_index = np.argsort(
+                        rank)[orifilter_num - currentfilter_num:]  # preserved filter id
                     select_index.sort()
 
-                    if (l==6 or (l==0 and layer_cnt!=1) or (l==3 and layer_cnt==1)) and last_select_index is not None:
+                    if (l == 6 or (l == 0 and layer_cnt != 1) or (l == 3 and layer_cnt == 1)) and last_select_index is not None:
                         for index_i, i in enumerate(select_index):
                             for index_j, j in enumerate(last_select_index):
                                 state_dict[name_base+conv_weight_name][index_i][index_j] = \
@@ -403,7 +417,7 @@ def load_mobilenetv2_model(model, oristate_dict):
 
                     last_select_index = select_index
 
-                elif  (l==6 or (l==0 and layer_cnt!=1) or (l==3 and layer_cnt==1)) and last_select_index is not None:
+                elif (l == 6 or (l == 0 and layer_cnt != 1) or (l == 3 and layer_cnt == 1)) and last_select_index is not None:
                     for index_i in range(orifilter_num):
                         for index_j, j in enumerate(last_select_index):
                             state_dict[name_base+conv_weight_name][index_i][index_j] = \
@@ -420,9 +434,10 @@ def load_mobilenetv2_model(model, oristate_dict):
                             oristate_dict[bn_name + bn_part]
                     last_select_index = None
 
-                state_dict[name_base + bn_name + '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
+                state_dict[name_base + bn_name +
+                           '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
 
-            layer_cnt+=1
+            layer_cnt += 1
 
     for name, module in model.named_modules():
         name = name.replace('module.', '')
@@ -436,13 +451,17 @@ def load_mobilenetv2_model(model, oristate_dict):
                 for bn_part in bn_part_name:
                     state_dict[name_base + bn_name + bn_part] = \
                         oristate_dict[bn_name + bn_part]
-                state_dict[name_base + bn_name + '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
+                state_dict[name_base + bn_name +
+                           '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
 
         elif isinstance(module, nn.Linear):
-            state_dict[name_base+name + '.weight'] = oristate_dict[name + '.weight']
-            state_dict[name_base+name + '.bias'] = oristate_dict[name + '.bias']
+            state_dict[name_base+name +
+                       '.weight'] = oristate_dict[name + '.weight']
+            state_dict[name_base+name +
+                       '.bias'] = oristate_dict[name + '.bias']
 
     model.load_state_dict(state_dict)
+
 
 def load_mobilenetv1_model(model, oristate_dict):
 
@@ -451,13 +470,13 @@ def load_mobilenetv1_model(model, oristate_dict):
     last_select_index = None
     all_honey_conv_weight = []
 
-    bn_part_name=['.weight','.bias','.running_mean','.running_var']
+    bn_part_name = ['.weight', '.bias', '.running_mean', '.running_var']
     prefix = args.rank_conv_prefix+'/rank_conv'
     subfix = ".npy"
 
-    conv_cnt=1
+    conv_cnt = 1
     for layer_cnt in range(13):
-        conv_id=[0,3]
+        conv_id = [0, 3]
         block_name = 'features.'+str(layer_cnt)+'.'
         for l in conv_id:
             conv_cnt += 1
@@ -472,12 +491,14 @@ def load_mobilenetv1_model(model, oristate_dict):
             currentfilter_num = curweight.size(0)
 
             if orifilter_num != currentfilter_num:
-                logger.info('loading rank from: ' + prefix + str(conv_cnt) + subfix)
+                logger.info('loading rank from: ' +
+                            prefix + str(conv_cnt) + subfix)
                 rank = np.load(prefix + str(conv_cnt) + subfix)
-                select_index = np.argsort(rank)[orifilter_num - currentfilter_num:]  # preserved filter id
+                select_index = np.argsort(
+                    rank)[orifilter_num - currentfilter_num:]  # preserved filter id
                 select_index.sort()
 
-                if l==3 and last_select_index is not None:
+                if l == 3 and last_select_index is not None:
                     for index_i, i in enumerate(select_index):
                         for index_j, j in enumerate(last_select_index):
                             state_dict[name_base+conv_weight_name][index_i][index_j] = \
@@ -495,7 +516,7 @@ def load_mobilenetv1_model(model, oristate_dict):
 
                 last_select_index = select_index
 
-            elif l==3 and last_select_index is not None:
+            elif l == 3 and last_select_index is not None:
                 for index_i in range(orifilter_num):
                     for index_j, j in enumerate(last_select_index):
                         state_dict[name_base+conv_weight_name][index_i][index_j] = \
@@ -512,7 +533,8 @@ def load_mobilenetv1_model(model, oristate_dict):
                         oristate_dict[bn_name + bn_part]
                 last_select_index = None
 
-            state_dict[name_base + bn_name + '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
+            state_dict[name_base + bn_name +
+                       '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
 
     for name, module in model.named_modules():
         name = name.replace('module.', '')
@@ -528,8 +550,10 @@ def load_mobilenetv1_model(model, oristate_dict):
                         oristate_dict[bn_name + bn_part]
 
         elif isinstance(module, nn.Linear):
-            state_dict[name_base+name + '.weight'] = oristate_dict[name + '.weight']
-            state_dict[name_base+name + '.bias'] = oristate_dict[name + '.bias']
+            state_dict[name_base+name +
+                       '.weight'] = oristate_dict[name + '.weight']
+            state_dict[name_base+name +
+                       '.bias'] = oristate_dict[name + '.bias']
 
     model.load_state_dict(state_dict)
 
@@ -543,7 +567,8 @@ def adjust_learning_rate(optimizer, epoch, step, len_iter):
         lr = args.learning_rate * (0.1 ** factor)
 
     elif args.lr_type == 'cos':  # cos without warm-up
-        lr = 0.5 * args.learning_rate * (1 + math.cos(math.pi * (epoch - 5) / (args.epochs - 5)))
+        lr = 0.5 * args.learning_rate * \
+            (1 + math.cos(math.pi * (epoch - 5) / (args.epochs - 5)))
 
     elif args.lr_type == 'exp':
         step = 1
@@ -555,7 +580,7 @@ def adjust_learning_rate(optimizer, epoch, step, len_iter):
     else:
         raise NotImplementedError
 
-    #Warmup
+    # Warmup
     if epoch < 5:
         lr = lr * float(1 + step + epoch * len_iter) / (5. * len_iter)
 
@@ -571,7 +596,7 @@ def main():
     start_t = time.time()
 
     cudnn.benchmark = True
-    cudnn.enabled=True
+    cudnn.enabled = True
     logger.info("args = %s", args)
 
     if args.compress_rate:
@@ -601,7 +626,8 @@ def main():
 
     criterion = nn.CrossEntropyLoss()
     criterion = criterion.cuda()
-    criterion_smooth = utils.CrossEntropyLabelSmooth(CLASSES, args.label_smooth)
+    criterion_smooth = utils.CrossEntropyLabelSmooth(
+        CLASSES, args.label_smooth)
     criterion_smooth = criterion_smooth.cuda()
 
     # load training data
@@ -612,7 +638,8 @@ def main():
 
     if args.test_only:
         if os.path.isfile(args.test_model_dir):
-            logger.info('loading checkpoint {} ..........'.format(args.test_model_dir))
+            logger.info('loading checkpoint {} ..........'.format(
+                args.test_model_dir))
             checkpoint = torch.load(args.test_model_dir)
             if 'state_dict' in checkpoint:
                 tmp_ckpt = checkpoint['state_dict']
@@ -624,7 +651,8 @@ def main():
                 new_state_dict[k.replace('module.', '')] = v
             model.load_state_dict(new_state_dict)
 
-            valid_obj, valid_top1_acc, valid_top5_acc = validate(0, val_loader, model, criterion, args)
+            valid_obj, valid_top1_acc, valid_top5_acc = validate(
+                0, val_loader, model, criterion, args)
         else:
             logger.info('please specify a checkpoint file')
 
@@ -636,7 +664,8 @@ def main():
             device_id.append(i)
         model = nn.DataParallel(model, device_ids=device_id).cuda()
 
-    optimizer = torch.optim.SGD(model.parameters(), args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    optimizer = torch.optim.SGD(model.parameters(
+    ), args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
 
     '''# define the learning rate scheduler
     #scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda step : (1.0-step/args.epochs), last_epoch=-1)
@@ -645,8 +674,8 @@ def main():
     elif args.lr_type=='cos':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=100, eta_min=0.0004)#'''
     start_epoch = 0
-    best_top1_acc= 0
-    best_top5_acc= 0
+    best_top1_acc = 0
+    best_top5_acc = 0
 
     # load the checkpoint if it exists
     checkpoint_dir = os.path.join(args.job_dir, 'checkpoint.pth.tar')
@@ -658,7 +687,7 @@ def main():
         if 'best_top5_acc' in checkpoint:
             best_top5_acc = checkpoint['best_top5_acc']
 
-        #deal with the single-multi GPU problem
+        # deal with the single-multi GPU problem
         new_state_dict = OrderedDict()
         tmp_ckpt = checkpoint['state_dict']
         if len(args.gpu) > 1:
@@ -669,13 +698,14 @@ def main():
                 new_state_dict[k.replace('module.', '')] = v
 
         model.load_state_dict(new_state_dict)
-        logger.info("loaded checkpoint {} epoch = {}".format(checkpoint_dir, checkpoint['epoch']))
+        logger.info("loaded checkpoint {} epoch = {}".format(
+            checkpoint_dir, checkpoint['epoch']))
     else:
         if args.use_pretrain:
             logger.info('resuming from pretrain model')
             origin_model = eval(args.arch)(compress_rate=[0.] * 100).cuda()
             ckpt = torch.load(args.pretrain_dir)
-            if args.arch=='mobilenet_v1':
+            if args.arch == 'mobilenet_v1':
                 origin_model.load_state_dict(ckpt['state_dict'])
             else:
                 origin_model.load_state_dict(ckpt)
@@ -704,8 +734,10 @@ def main():
     # train the model
     epoch = start_epoch
     while epoch < args.epochs:
-        train_obj, train_top1_acc,  train_top5_acc = train(epoch,  train_loader, model, criterion_smooth, optimizer)
-        valid_obj, valid_top1_acc, valid_top5_acc = validate(epoch, val_loader, model, criterion, args)
+        train_obj, train_top1_acc,  train_top5_acc = train(
+            epoch,  train_loader, model, criterion_smooth, optimizer)
+        valid_obj, valid_top1_acc, valid_top5_acc = validate(
+            val_loader, model, criterion)
 
         is_best = False
         if valid_top1_acc > best_top1_acc:
@@ -718,15 +750,16 @@ def main():
             'state_dict': model.state_dict(),
             'best_top1_acc': best_top1_acc,
             'best_top5_acc': best_top5_acc,
-            'optimizer' : optimizer.state_dict(),
-            }, is_best, args.job_dir)
+            'optimizer': optimizer.state_dict(),
+        }, is_best, args.job_dir)
 
         cur_lr = optimizer.param_groups[0]["lr"]
         wandb.log({'epoch': epoch, 'best_acc': max(valid_top1_acc, best_top1_acc), 'top1': valid_top1_acc,
                    'top5': valid_top5_acc, 'lr': cur_lr})
 
         epoch += 1
-        logger.info("=>Best accuracy Top1: {:.3f}, Top5: {:.3f}".format(best_top1_acc, best_top5_acc))
+        logger.info("=>Best accuracy Top1: {:.3f}, Top5: {:.3f}".format(
+            best_top1_acc, best_top5_acc))
 
     training_time = (time.time() - start_t) / 36000
     logger.info('total training time = {} hours'.format(training_time))
@@ -741,7 +774,7 @@ def train(epoch, train_loader, model, criterion, optimizer):
 
     model.train()
     end = time.time()
-    #scheduler.step()
+    # scheduler.step()
 
     num_iter = len(train_loader)
 
@@ -784,6 +817,7 @@ def train(epoch, train_loader, model, criterion, optimizer):
 
     return losses.avg, top1.avg, top5.avg
 
+
 def validate(val_loader, model, criterion):
     batch_time = utils.AverageMeter('Time', ':6.3f')
     losses = utils.AverageMeter('Loss', ':.4e')
@@ -820,4 +854,4 @@ def validate(val_loader, model, criterion):
 
 
 if __name__ == '__main__':
-  main()
+    main()
