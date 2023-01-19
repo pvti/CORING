@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser("ImageNet training")
 parser.add_argument(
     '--data_dir',
     type=str,
-    default='data/imagenet/',
+    default='data/imagenet',
     help='path to dataset')
 
 parser.add_argument(
@@ -40,7 +40,7 @@ parser.add_argument(
 parser.add_argument(
     '--job_dir',
     type=str,
-    default='./models',
+    default='result',
     help='path for saving trained models')
 
 parser.add_argument(
@@ -110,7 +110,7 @@ parser.add_argument(
 parser.add_argument(
     '--rank_conv_prefix',
     type=str,
-    default='',
+    default='rank',
     help='rank conv file folder')
 
 parser.add_argument(
@@ -152,17 +152,10 @@ parser.add_argument(
 args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-# init wandb
-name = args.criterion + '_' + args.compress_rate
-wandb.init(
-    name=name,
-    project='CriteriaComparison' + '_' + args.strategy + '_' + args.arch,
-    config=vars(args)
-)
-
 CLASSES = 1000
 print_freq = 128000//args.batch_size
 
+args.job_dir = os.path.join(args.job_dir, args.arch, args.strategy, args.criterion)
 if not os.path.isdir(args.job_dir):
     os.makedirs(args.job_dir)
 
@@ -183,7 +176,16 @@ if not args.resume:
         os.remove(args.job_dir+'/logger.log')
 
 utils.record_config(args)
-logger = utils.get_logger(os.path.join(args.job_dir, 'logger.log'))
+now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+logger = utils.get_logger(os.path.join(args.job_dir, 'prune_finetune'+now+'.log'))
+
+# init wandb
+name = args.criterion + '_' + args.compress_rate
+wandb.init(
+    name=name,
+    project='CriteriaComparison' + '_' + args.strategy + '_' + args.arch,
+    config=vars(args)
+)
 
 # use for loading pretrain model
 if len(args.gpu) > 1:

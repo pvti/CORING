@@ -37,8 +37,8 @@ parser.add_argument(
 parser.add_argument(
     '--job_dir',
     type=str,
-    default='result/hrankplus/resnet_56/standard',
-    help='path for saving trained models')
+    default='result',
+    help='path for saving ranking log')
 parser.add_argument(
     '--pretrain_dir',
     type=str,
@@ -73,6 +73,7 @@ args = parser.parse_args()
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
+args.job_dir = osp.join(args.job_dir, args.arch, args.strategy, args.criterion)
 if not osp.isdir(args.job_dir):
     os.makedirs(args.job_dir)
 
@@ -87,11 +88,11 @@ else:
     name_base = ''
 
 # creat folder to save rank files
-prefix = osp.join(args.rank_conv_prefix, args.arch,
-                    args.strategy, args.criterion,
-                    'rank_conv')
-if not osp.isdir(prefix):
-    os.makedirs(prefix)
+prefix_folder = osp.join(args.rank_conv_prefix, args.arch,
+                         args.strategy, args.criterion)
+if not osp.isdir(prefix_folder):
+    os.makedirs(prefix_folder)
+prefix = osp.join(prefix_folder, 'rank_conv')
 subfix = ".npy"
 
 
@@ -120,10 +121,10 @@ def get_correlation_mat(all_filters_u_dict):
 
 def get_rank(weight):
     """Get rank based on HOSVD+VBD+min_sum"""
-    num_filters = weight.shape[1]
+    num_filters = weight.size(0)
     all_filters_u_dict = {}
     for i_filter in tqdm(range(num_filters)):
-        filter = weight.detach()[:, i_filter]
+        filter = weight.detach()[i_filter, :]
         u = decompose(filter, decomposer='hosvd')
         all_filters_u_dict[i_filter] = [i.tolist() for i in u]
 
@@ -138,19 +139,19 @@ def get_rank(weight):
 
 def save(rank, cov_id):
     save_pth = prefix + str(cov_id) + subfix
-    logger.info('saving rank to: ' + save_pth)
     np.save(save_pth, rank)
+    logger.info('rank saved to: ' + save_pth)
 
 
 def rank_vgg(model, state_dict):
     # iterate over all convolutional layers
-    cnt = 0
+    cov_id = 0
     for name, module in model.named_modules():
         name = name.replace('module.', '')
         if isinstance(module, nn.Conv2d):
-            cnt += 1
+            cov_id += 1
             weight = state_dict[name + '.weight']
-            cov_id = cnt
+            logger.info(f'=> calculating rank of: {name}')
             rank = get_rank(weight)
             save(rank, cov_id)
 
@@ -177,6 +178,7 @@ def rank_resnet(state_dict, layer):
                 print(f"conv_name = {conv_name}")
                 conv_weight_name = conv_name + '.weight'
                 weight = state_dict[conv_weight_name]
+                logger.info(f'=> calculating rank of: {conv_weight_name}')
                 rank = get_rank(weight)
                 save(rank, cov_id)
 
@@ -438,96 +440,48 @@ def load_google_model(model, oristate_dict):
     model.load_state_dict(state_dict)
 
 
-def load_densenet_model(model, oristate_dict):
-
-    state_dict = model.state_dict()
-    last_select_index = []  # Conv index selected in the previous layer
-
-    cnt = 0
-    prefix = osp.join(args.rank_conv_prefix, args.arch, 'rank_conv')
-    subfix = ".npy"
+def rank_densenet(model, state_dict):
+    # iterate over all convolutional layers
+    cov_id = 0
     for name, module in model.named_modules():
         name = name.replace('module.', '')
-
         if isinstance(module, nn.Conv2d):
-
-            cnt += 1
-            cov_id = cnt
-            oriweight = oristate_dict[name + '.weight']
-            curweight = state_dict[name_base+name + '.weight']
-            orifilter_num = oriweight.size(0)
-            currentfilter_num = curweight.size(0)
-
-            if orifilter_num != currentfilter_num:
-                logger.info('loading rank from: ' +
-                            prefix + str(cov_id) + subfix)
-                rank = np.load(prefix + str(cov_id) + subfix)
-                if args.random_rank:
-                    rank = np.random.random_sample(rank.shape)
-                # preserved filter id
-                select_index = list(np.argsort(
-                    rank)[orifilter_num-currentfilter_num:])
-                select_index.sort()
-
-                if last_select_index is not None:
-                    for index_i, i in enumerate(select_index):
-                        for index_j, j in enumerate(last_select_index):
-                            state_dict[name_base+name + '.weight'][index_i][index_j] = \
-                                oristate_dict[name + '.weight'][i][j]
-                else:
-                    for index_i, i in enumerate(select_index):
-                        state_dict[name_base+name + '.weight'][index_i] = \
-                            oristate_dict[name + '.weight'][i]
-
-            elif last_select_index is not None:
-                for i in range(orifilter_num):
-                    for index_j, j in enumerate(last_select_index):
-                        state_dict[name_base+name + '.weight'][i][index_j] = \
-                            oristate_dict[name + '.weight'][i][j]
-                select_index = list(range(0, orifilter_num))
-
-            else:
-                select_index = list(range(0, orifilter_num))
-                state_dict[name_base+name + '.weight'] = oriweight
-
-            if cov_id == 1 or cov_id == 14 or cov_id == 27:
-                last_select_index = select_index
-            else:
-                tmp_select_index = [x+cov_id*12 -
-                                    (cov_id-1)//13*12 for x in select_index]
-                last_select_index += tmp_select_index
-
-    model.load_state_dict(state_dict)
+            cov_id += 1
+            weight = state_dict[name + '.weight']
+            logger.info(f'=> calculating rank of: {name}')
+            rank = get_rank(weight)
+            save(rank, cov_id)
 
 
 def rank_resnet50(state_dict):
-    cfg = {'resnet_50': [3, 4, 6, 3],}
+    cfg = {'resnet_50': [3, 4, 6, 3], }
     current_cfg = cfg[args.arch]
 
-    cnt=1
+    cnt = 1
     conv_weight_name = 'conv1.weight'
     weight = state_dict[conv_weight_name]
     rank = get_rank(weight)
     save(rank, cnt)
 
-    cnt+=1
+    cnt += 1
     for layer, num in enumerate(current_cfg):
         layer_name = 'layer' + str(layer + 1) + '.'
 
         for k in range(num):
             iter = 3
-            if k==0:
-                iter +=1
+            if k == 0:
+                iter += 1
             for l in range(iter):
-                if k==0 and l==2:
+                if k == 0 and l == 2:
                     conv_name = layer_name + str(k) + '.downsample.0'
-                elif k==0 and l==3:
+                elif k == 0 and l == 3:
                     conv_name = layer_name + str(k) + '.conv' + str(l)
                 else:
                     conv_name = layer_name + str(k) + '.conv' + str(l + 1)
 
                 conv_weight_name = conv_name + '.weight'
                 weight = state_dict[conv_weight_name]
+                logger.info(f'=> calculating rank of: {conv_weight_name}')
                 rank = get_rank(weight)
                 save(rank, cnt)
                 cnt += 1
@@ -567,7 +521,7 @@ def main():
         elif args.arch == 'resnet_110':
             rank_resnet(state_dict, 110)
         elif args.arch == 'densenet_40':
-            load_densenet_model(model, state_dict)
+            rank_densenet(model, state_dict)
         else:
             raise ValueError("Not implemented arch")
 

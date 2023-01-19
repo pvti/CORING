@@ -42,7 +42,7 @@ parser.add_argument(
 parser.add_argument(
     '--job_dir',
     type=str,
-    default='result/hrankplus/resnet_56/standard',
+    default='result',
     help='path for saving trained models')
 parser.add_argument(
     '--batch_size',
@@ -138,8 +138,7 @@ parser.add_argument(
     '--criterion',
     default='VBD_dis',
     type=str,
-    help='criterion'
-)
+    help='criterion')
 parser.add_argument(
     '--strategy',
     default='min_sum',
@@ -164,22 +163,24 @@ else:
     else:
         name += '_standard'
 
-wandb.init(
-    name=name,
-    project='CriteriaComparison' + '_' + args.strategy + '_' + args.arch,
-    config=vars(args)
-)
-
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 CLASSES = 10
 print_freq = (256*50)//args.batch_size
 
+args.job_dir = osp.join(args.job_dir, args.arch, args.strategy, args.criterion)
 if not osp.isdir(args.job_dir):
     os.makedirs(args.job_dir)
 
 utils.record_config(args)
 now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-logger = utils.get_logger(osp.join(args.job_dir, 'logger'+now+'.log'))
+logger = utils.get_logger(osp.join(args.job_dir, 'prune_finetune'+now+'.log'))
+
+wandb.init(
+    name=name,
+    project='CriteriaComparison' + '_' +
+    args.job_dir.replace(args.criterion, '').replace('/', '_'),
+    config=vars(args)
+)
 
 # use for loading pretrain model
 if len(args.gpu) > 1:
@@ -188,11 +189,12 @@ else:
     name_base = ''
 
 # define rank folder
-prefix = osp.join(args.rank_conv_prefix, args.arch,
-                    args.strategy, args.criterion,
-                    'rank_conv')
-assert osp.isdir(prefix), "Rank folder not found!"
+prefix_folder = osp.join(args.rank_conv_prefix, args.arch,
+                         args.strategy, args.criterion)
+assert osp.isdir(prefix_folder), "Rank not found!"
+prefix = osp.join(prefix_folder, 'rank_conv')
 subfix = ".npy"
+
 
 def load_vgg_model(model, oristate_dict):
     state_dict = model.state_dict()
@@ -593,8 +595,6 @@ def load_densenet_model(model, oristate_dict):
     last_select_index = []  # Conv index selected in the previous layer
 
     cnt = 0
-    prefix = osp.join(args.rank_conv_prefix, args.arch, 'rank_conv')
-    subfix = ".npy"
     for name, module in model.named_modules():
         name = name.replace('module.', '')
 
