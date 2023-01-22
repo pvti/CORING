@@ -1,5 +1,6 @@
 
 import os
+import os.path as osp
 import numpy as np
 import time
 import datetime
@@ -194,10 +195,10 @@ else:
     name_base = ''
 
 # define rank folder
-prefix = os.path.join(args.rank_conv_prefix, args.arch,
-                      args.strategy, args.criterion,
-                      'rank_conv')
-assert os.path.isdir(prefix), "Rank folder not found!"
+prefix_folder = osp.join(args.rank_conv_prefix, args.arch,
+                         args.strategy, args.criterion)
+assert osp.isdir(prefix_folder), "Rank not found!"
+prefix = osp.join(prefix_folder, 'rank_conv')
 subfix = ".npy"
 
 

@@ -77,6 +77,10 @@ parser.add_argument(
     default=5e-3,
     help='weight decay')
 parser.add_argument(
+    '--resume',
+    action='store_true',
+    help='whether continue training from the same directory')
+parser.add_argument(
     '--pretrain_dir',
     type=str,
     default='checkpoint/cifar/cifar10/resnet_56.pt',
@@ -178,13 +182,6 @@ if len(args.gpu) > 1:
     name_base = 'module.'
 else:
     name_base = ''
-
-# define rank folder
-prefix_folder = osp.join(args.rank_conv_prefix, args.arch,
-                         args.strategy, args.criterion)
-assert osp.isdir(prefix_folder), "Rank not found!"
-prefix = osp.join(prefix_folder, 'rank_conv')
-subfix = ".npy"
 
 # load training data
 train_loader, val_loader = cifar10.load_data(args)
