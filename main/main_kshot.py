@@ -344,8 +344,6 @@ def load_google_model(model, oristate_dict):
     cur_last_select_index = []
 
     cnt = 0
-    prefix = osp.join(args.rank_conv_prefix, args.arch, 'rank_conv')
-    subfix = ".npy"
     for name, module in model.named_modules():
         name = name.replace('module.', '')
 
@@ -440,9 +438,9 @@ def load_google_model(model, oristate_dict):
                 currentfilter_num = curweight.size(0)
 
                 if orifilter_num != currentfilter_num:
-                    logger.info('loading rank from: ' + prefix +
-                                str(cov_id) + branch_name + subfix)
-                    rank = np.load(prefix + str(cov_id) + branch_name + subfix)
+                    logger.info(
+                        f'computing rank for name = {name} weight_index = {weight_index} conv_name = {conv_name}')
+                    rank = get_rank(oriweight, args.criterion, args.strategy)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(
@@ -493,9 +491,9 @@ def load_google_model(model, oristate_dict):
                 select_index_1 = copy.deepcopy(select_index)
 
                 if orifilter_num != currentfilter_num:
-                    logger.info('loading rank from: ' + prefix +
-                                str(cov_id) + branch_name + subfix)
-                    rank = np.load(prefix + str(cov_id) + branch_name + subfix)
+                    logger.info(
+                        f'computing rank for name = {name} weight_index = {weight_index} conv_name = {conv_name}')
+                    rank = get_rank(oriweight, args.criterion, args.strategy)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(
@@ -538,7 +536,9 @@ def load_google_model(model, oristate_dict):
                 currentfilter_num = curweight.size(0)
 
                 if orifilter_num != currentfilter_num:
-                    rank = np.load(prefix + str(cov_id) + subfix)
+                    logger.info(
+                        f'computing rank for name = {name} weight_index = {weight_index} conv_name = {conv_name}')
+                    rank = get_rank(oriweight, args.criterion, args.strategy)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(
@@ -763,8 +763,6 @@ def main():
 
     start_epoch = 0
     best_top1_acc = 0
-
-    
 
     # adjust the learning rate according to the checkpoint
     for epoch in range(start_epoch):
