@@ -8,6 +8,7 @@ import argparse
 import copy
 from thop import profile
 from collections import OrderedDict
+import math
 
 import torch
 import torch.nn as nn
@@ -132,7 +133,7 @@ parser.add_argument(
     '--shot',
     type=int,
     default=10,
-    help='num of calibrating epochs')
+    help='num of shot')
 parser.add_argument(
     '--calib',
     type=int,
@@ -143,6 +144,8 @@ parser.set_defaults(use_onecycle=False)
 parser.set_defaults(random_rank=False)
 
 args = parser.parse_args()
+
+args.calib = math.ceil(100/args.shot)
 
 # init wandb
 name = args.criterion + '_' + args.compress_rate
@@ -162,7 +165,8 @@ CLASSES = 10
 print_freq = (256*50)//args.batch_size
 
 args.job_dir = osp.join(args.job_dir, args.arch,
-                        args.strategy, args.criterion, str(args.shot))
+                        args.strategy, args.criterion,
+                        str(args.shot), args.compress_rate)
 if not osp.isdir(args.job_dir):
     os.makedirs(args.job_dir)
 
@@ -173,7 +177,7 @@ logger = utils.get_logger(osp.join(args.job_dir, 'prune_finetune'+now+'.log'))
 wandb.init(
     name=name,
     project='KShot' + '_' +
-    args.job_dir.replace(args.criterion, '').replace('/', '_'),
+    args.job_dir.replace(args.criterion, '').replace('/', '_').replace(args.compress_rate, ''),
     config=vars(args)
 )
 
