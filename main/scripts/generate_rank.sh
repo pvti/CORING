@@ -1,5 +1,5 @@
 # generate rank for all combinations
-for arch in vgg_16_bn resnet_56 densenet_40
+for arch in vgg_16_bn resnet_56 densenet_40 googlenet
 do
     for strategy in min_sum
     do

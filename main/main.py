@@ -167,7 +167,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 CLASSES = 10
 print_freq = (256*50)//args.batch_size
 
-args.job_dir = osp.join(args.job_dir, args.arch, args.strategy, args.criterion)
+args.job_dir = osp.join(args.job_dir, args.arch, args.strategy, args.criterion, args.compress_rate)
 if not osp.isdir(args.job_dir):
     os.makedirs(args.job_dir)
 
@@ -178,7 +178,7 @@ logger = utils.get_logger(osp.join(args.job_dir, 'prune_finetune'+now+'.log'))
 wandb.init(
     name=name,
     project='CriteriaComparison' + '_' +
-    args.job_dir.replace(args.criterion, '').replace('/', '_'),
+    args.job_dir.replace(args.criterion, '').replace('/', '_').replace(args.compress_rate, ''),
     config=vars(args)
 )
 
@@ -351,8 +351,6 @@ def load_google_model(model, oristate_dict):
     cur_last_select_index = []
 
     cnt = 0
-    prefix = osp.join(args.rank_conv_prefix, args.arch, 'rank_conv')
-    subfix = ".npy"
     for name, module in model.named_modules():
         name = name.replace('module.', '')
 
@@ -447,9 +445,9 @@ def load_google_model(model, oristate_dict):
                 currentfilter_num = curweight.size(0)
 
                 if orifilter_num != currentfilter_num:
-                    logger.info('loading rank from: ' + prefix +
-                                str(cov_id) + branch_name + subfix)
-                    rank = np.load(prefix + str(cov_id) + branch_name + subfix)
+                    load_pth = prefix + str(cov_id) + branch_name + subfix
+                    logger.info('loading rank from: ' + load_pth)
+                    rank = np.load(load_pth)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(
@@ -500,9 +498,9 @@ def load_google_model(model, oristate_dict):
                 select_index_1 = copy.deepcopy(select_index)
 
                 if orifilter_num != currentfilter_num:
-                    logger.info('loading rank from: ' + prefix +
-                                str(cov_id) + branch_name + subfix)
-                    rank = np.load(prefix + str(cov_id) + branch_name + subfix)
+                    load_pth = prefix + str(cov_id) + branch_name + subfix
+                    logger.info('loading rank from: ' + load_pth)
+                    rank = np.load(load_pth)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(
@@ -545,7 +543,9 @@ def load_google_model(model, oristate_dict):
                 currentfilter_num = curweight.size(0)
 
                 if orifilter_num != currentfilter_num:
-                    rank = np.load(prefix + str(cov_id) + subfix)
+                    load_pth = prefix + str(cov_id) + subfix
+                    logger.info('loading rank from: ' + load_pth)
+                    rank = np.load(load_pth)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(

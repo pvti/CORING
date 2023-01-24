@@ -78,7 +78,7 @@ if not osp.isdir(args.job_dir):
     os.makedirs(args.job_dir)
 
 utils.record_config(args)
-now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+now = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 logger = utils.get_logger(osp.join(args.job_dir, 'gen_rank_'+now+'.log'))
 
 # use for loading pretrain model
@@ -137,8 +137,8 @@ def get_rank(weight):
     return saliency
 
 
-def save(rank, cov_id):
-    save_pth = prefix + str(cov_id) + subfix
+def save(rank, cov_id, branch_name=''):
+    save_pth = prefix + str(cov_id) + branch_name + subfix
     np.save(save_pth, rank)
     logger.info('rank saved to: ' + save_pth)
 
@@ -183,32 +183,15 @@ def rank_resnet(state_dict, layer):
                 save(rank, cov_id)
 
 
-def load_google_model(model, oristate_dict):
-    state_dict = model.state_dict()
-
-    filters = [
-        [64, 128, 32, 32],
-        [128, 192, 96, 64],
-        [192, 208, 48, 64],
-        [160, 224, 64, 64],
-        [128, 256, 64, 64],
-        [112, 288, 64, 64],
-        [256, 320, 128, 128],
-        [256, 320, 128, 128],
-        [384, 384, 128, 128]
-    ]
-
-    # last_select_index = []
+def rank_googlenet(model, oristate_dict):
     all_honey_conv_name = []
     all_honey_bn_name = []
-    cur_last_select_index = []
 
     cnt = 0
     for name, module in model.named_modules():
         name = name.replace('module.', '')
 
         if isinstance(module, Inception):
-
             cnt += 1
             cov_id = cnt
 
@@ -234,11 +217,7 @@ def load_google_model(model, oristate_dict):
             for bn_index in honey_bn_index:
                 all_honey_bn_name.append(name + bn_index)
 
-            last_select_index = cur_last_select_index[:]
-            cur_last_select_index = []
-
             for weight_index in honey_channel_index:
-
                 if '3x3' in weight_index:
                     branch_name = '_n3x3'
                 elif '5x5' in weight_index:
@@ -250,35 +229,8 @@ def load_google_model(model, oristate_dict):
 
                 conv_name = name + weight_index + '.weight'
                 all_honey_conv_name.append(name + weight_index)
-
-                oriweight = oristate_dict[conv_name]
-                curweight = state_dict[name_base+conv_name]
-                orifilter_num = oriweight.size(1)
-                currentfilter_num = curweight.size(1)
-
-                if orifilter_num != currentfilter_num:
-                    select_index = last_select_index
-                else:
-                    select_index = list(range(0, orifilter_num))
-
-                for i in range(state_dict[name_base+conv_name].size(0)):
-                    for index_j, j in enumerate(select_index):
-                        state_dict[name_base+conv_name][i][index_j] = \
-                            oristate_dict[conv_name][i][j]
-
-                if branch_name == '_n1x1':
-                    tmp_select_index = list(
-                        range(state_dict[name_base+conv_name].size(0)))
-                    cur_last_select_index += tmp_select_index
-                if branch_name == '_pool_planes':
-                    tmp_select_index = list(
-                        range(state_dict[name_base+conv_name].size(0)))
-                    tmp_select_index = [x+filters[cov_id-2][0]+filters[cov_id-2]
-                                        [1]+filters[cov_id-2][2] for x in tmp_select_index]
-                    cur_last_select_index += tmp_select_index
 
             for weight_index in honey_filter_index:
-
                 if '3x3' in weight_index:
                     branch_name = '_n3x3'
                 elif '5x5' in weight_index:
@@ -289,39 +241,13 @@ def load_google_model(model, oristate_dict):
                     branch_name = '_pool_planes'
 
                 conv_name = name + weight_index + '.weight'
-
                 all_honey_conv_name.append(name + weight_index)
-                oriweight = oristate_dict[conv_name]
-                curweight = state_dict[name_base+conv_name]
-
-                orifilter_num = oriweight.size(0)
-                currentfilter_num = curweight.size(0)
-
-                if orifilter_num != currentfilter_num:
-                    logger.info('loading rank from: ' + prefix +
-                                str(cov_id) + branch_name + subfix)
-                    rank = np.load(prefix + str(cov_id) + branch_name + subfix)
-                    if args.random_rank:
-                        rank = np.random.random_sample(rank.shape)
-                    select_index = np.argsort(
-                        rank)[orifilter_num - currentfilter_num:]  # preserved filter id
-                    select_index.sort()
-                else:
-                    select_index = list(range(0, orifilter_num))
-
-                for index_i, i in enumerate(select_index):
-                    state_dict[name_base+conv_name][index_i] = \
-                        oristate_dict[conv_name][i]
-
-                if branch_name == '_n3x3':
-                    tmp_select_index = [x+filters[cov_id-2][0]
-                                        for x in select_index]
-                    cur_last_select_index += tmp_select_index
-                if branch_name == '_n5x5':
-                    last_select_index = select_index
+                weight = oristate_dict[conv_name]
+                logger.info(f'=> calculating rank of: {cov_id} {branch_name}')
+                rank = get_rank(weight)
+                save(rank, cov_id, branch_name)
 
             for weight_index in honey_filter_channel_index:
-
                 if '3x3' in weight_index:
                     branch_name = '_n3x3'
                 elif '5x5' in weight_index:
@@ -333,51 +259,14 @@ def load_google_model(model, oristate_dict):
 
                 conv_name = name + weight_index + '.weight'
                 all_honey_conv_name.append(name + weight_index)
-
-                oriweight = oristate_dict[conv_name]
-                curweight = state_dict[name_base+conv_name]
-
-                orifilter_num = oriweight.size(1)
-                currentfilter_num = curweight.size(1)
-
-                if orifilter_num != currentfilter_num:
-                    select_index = last_select_index
-                else:
-                    select_index = range(0, orifilter_num)
-
-                orifilter_num = oriweight.size(0)
-                currentfilter_num = curweight.size(0)
-
-                select_index_1 = copy.deepcopy(select_index)
-
-                if orifilter_num != currentfilter_num:
-                    logger.info('loading rank from: ' + prefix +
-                                str(cov_id) + branch_name + subfix)
-                    rank = np.load(prefix + str(cov_id) + branch_name + subfix)
-                    if args.random_rank:
-                        rank = np.random.random_sample(rank.shape)
-                    select_index = np.argsort(
-                        rank)[orifilter_num - currentfilter_num:]  # preserved filter id
-                    select_index.sort()
-
-                else:
-                    select_index = list(range(0, orifilter_num))
-
-                if branch_name == '_n5x5':
-                    tmp_select_index = [x+filters[cov_id-2][0] +
-                                        filters[cov_id-2][1] for x in select_index]
-                    cur_last_select_index += tmp_select_index
-
-                for index_i, i in enumerate(select_index):
-                    for index_j, j in enumerate(select_index_1):
-                        state_dict[name_base+conv_name][index_i][index_j] = \
-                            oristate_dict[conv_name][i][j]
+                weight = oristate_dict[conv_name]
+                logger.info(f'=> calculating rank of: {cov_id} {branch_name}')
+                rank = get_rank(weight)
+                save(rank, cov_id, branch_name)
 
         elif name == 'pre_layers':
-
             cnt += 1
             cov_id = cnt
-
             honey_filter_index = ['.0']  # the index of sketch filter weight
             honey_bn_index = ['.1']  # the index of sketch bn weight
 
@@ -385,59 +274,12 @@ def load_google_model(model, oristate_dict):
                 all_honey_bn_name.append(name + bn_index)
 
             for weight_index in honey_filter_index:
-
                 conv_name = name + weight_index + '.weight'
-
                 all_honey_conv_name.append(name + weight_index)
-                oriweight = oristate_dict[conv_name]
-                curweight = state_dict[name_base+conv_name]
-
-                orifilter_num = oriweight.size(0)
-                currentfilter_num = curweight.size(0)
-
-                if orifilter_num != currentfilter_num:
-                    rank = np.load(prefix + str(cov_id) + subfix)
-                    if args.random_rank:
-                        rank = np.random.random_sample(rank.shape)
-                    select_index = np.argsort(
-                        rank)[orifilter_num - currentfilter_num:]  # preserved filter id
-                    select_index.sort()
-
-                    cur_last_select_index = select_index[:]
-
-                    for index_i, i in enumerate(select_index):
-                        state_dict[name_base+conv_name][index_i] = \
-                            oristate_dict[conv_name][i]  # '''
-
-    for name, module in model.named_modules():  # Reassign non sketch weights to the new network
-        name = name.replace('module.', '')
-
-        if isinstance(module, nn.Conv2d):
-            if name not in all_honey_conv_name:
-                state_dict[name_base+name +
-                           '.weight'] = oristate_dict[name + '.weight']
-                state_dict[name_base+name +
-                           '.bias'] = oristate_dict[name + '.bias']
-
-        elif isinstance(module, nn.BatchNorm2d):
-
-            if name not in all_honey_bn_name:
-                state_dict[name_base+name +
-                           '.weight'] = oristate_dict[name + '.weight']
-                state_dict[name_base+name +
-                           '.bias'] = oristate_dict[name + '.bias']
-                state_dict[name_base+name +
-                           '.running_mean'] = oristate_dict[name + '.running_mean']
-                state_dict[name_base+name +
-                           '.running_var'] = oristate_dict[name + '.running_var']
-
-        elif isinstance(module, nn.Linear):
-            state_dict[name_base+name +
-                       '.weight'] = oristate_dict[name + '.weight']
-            state_dict[name_base+name +
-                       '.bias'] = oristate_dict[name + '.bias']
-
-    model.load_state_dict(state_dict)
+                weight = oristate_dict[conv_name]
+                logger.info(f'=> calculating rank of: {cov_id}')
+                rank = get_rank(weight)
+                save(rank, cov_id)
 
 
 def rank_densenet(model, state_dict):
@@ -513,7 +355,7 @@ def main():
         state_dict = model.state_dict()
 
         if args.arch == 'googlenet':
-            load_google_model(model, state_dict)
+            rank_googlenet(model, state_dict)
         elif args.arch == 'vgg_16_bn':
             rank_vgg(model, state_dict)
         elif args.arch == 'resnet_56':
