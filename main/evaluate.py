@@ -156,7 +156,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 CLASSES = 1000
 print_freq = 128000//args.batch_size
 
-args.job_dir = os.path.join(args.job_dir, args.arch, args.strategy, args.criterion)
+args.job_dir = osp.join(args.job_dir, args.arch, args.strategy, args.criterion, args.compress_rate)
 if not os.path.isdir(args.job_dir):
     os.makedirs(args.job_dir)
 
@@ -184,7 +184,8 @@ logger = utils.get_logger(os.path.join(args.job_dir, 'prune_finetune'+now+'.log'
 name = args.criterion + '_' + args.compress_rate
 wandb.init(
     name=name,
-    project='CriteriaComparison' + '_' + args.strategy + '_' + args.arch,
+    project='CriteriaComparison' + '_' +
+    args.job_dir.replace(args.criterion, '').replace('/', '_').replace(args.compress_rate, ''),
     config=vars(args)
 )
 
@@ -763,6 +764,8 @@ def main():
         epoch += 1
         logger.info("=>Best accuracy Top1: {:.3f}, Top5: {:.3f}".format(
             best_top1_acc, best_top5_acc))
+
+    wandb.save(osp(args.job_dir, '*'))
 
     training_time = (time.time() - start_t) / 36000
     logger.info('total training time = {} hours'.format(training_time))
