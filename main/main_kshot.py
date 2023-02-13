@@ -137,15 +137,13 @@ parser.add_argument(
 parser.add_argument(
     '--calib',
     type=int,
-    default=10,
+    default=100,
     help='num of calibrating epochs')
 
 parser.set_defaults(use_onecycle=False)
 parser.set_defaults(random_rank=False)
 
 args = parser.parse_args()
-
-args.calib = math.ceil(100/args.shot)
 
 # init wandb
 name = args.criterion + '_' + args.compress_rate
@@ -708,7 +706,7 @@ def prune(origin_model, compress_rate):
     local_scheduler = torch.optim.lr_scheduler.MultiStepLR(
         local_optimizer, milestones=lr_decay_step, gamma=0.1)
     epoch = 0
-    while epoch < args.calib:
+    while epoch < math.ceil(args.calib/args.shot):
         train_obj, train_top1_acc,  train_top5_acc = train(
             epoch,  train_loader, model, criterion, local_optimizer, local_scheduler)
         epoch += 1
@@ -802,6 +800,8 @@ def main():
 
         epoch += 1
         logger.info("=>Best accuracy {:.3f}".format(best_top1_acc))
+
+    wandb.save(osp.join(args.job_dir, '*'))
 
 
 def train(epoch, train_loader, model, criterion, optimizer, scheduler):

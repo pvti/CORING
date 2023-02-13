@@ -816,7 +816,7 @@ def main():
         epoch += 1
         logger.info("=>Best accuracy {:.3f}".format(best_top1_acc))
 
-    wandb.save(osp(args.job_dir, '*'))
+    wandb.save(osp.join(args.job_dir, '*'))
 
 
 def train(epoch, train_loader, model, criterion, optimizer, scheduler):

@@ -765,7 +765,7 @@ def main():
         logger.info("=>Best accuracy Top1: {:.3f}, Top5: {:.3f}".format(
             best_top1_acc, best_top5_acc))
 
-    wandb.save(osp(args.job_dir, '*'))
+    wandb.save(osp.join(args.job_dir, '*'))
 
     training_time = (time.time() - start_t) / 36000
     logger.info('total training time = {} hours'.format(training_time))
