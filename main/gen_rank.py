@@ -18,6 +18,7 @@ from models.cifar10.resnet import resnet_56, resnet_110
 from models.cifar10.googlenet import googlenet, Inception
 from models.cifar10.densenet import densenet_40
 from models.imagenet.resnet import resnet_50
+from models.cifar10.mobilenetv2 import mobilenet_v2
 
 import utils.common as utils
 
@@ -329,6 +330,37 @@ def rank_resnet50(state_dict):
                 cnt += 1
 
 
+def rank_mobilenetv2(state_dict):
+    layer_cnt = 1
+    conv_cnt = 1
+    cfg = [1, 2, 3, 4, 3, 3, 1, 1]
+    for layer, num in enumerate(cfg):
+        if layer_cnt == 1:
+            conv_id = [0, 3]
+        elif layer_cnt == 18:
+            conv_id = [0]
+        else:
+            conv_id = [0, 3, 6]
+
+        for k in range(num):
+            if layer_cnt == 18:
+                block_name = 'features.' + str(layer_cnt) + '.'
+            else:
+                block_name = 'features.'+str(layer_cnt)+'.conv.'
+
+            for l in conv_id:
+                conv_cnt += 1
+                conv_name = block_name + str(l)
+
+                conv_weight_name = conv_name + '.weight'
+                weight = state_dict[conv_weight_name]
+                logger.info(f'=> calculating rank of: {conv_weight_name}')
+                rank = get_rank(weight)
+                save(rank, conv_cnt)
+
+            layer_cnt += 1
+
+
 def main():
     cudnn.benchmark = True
     cudnn.enabled = True
@@ -364,6 +396,8 @@ def main():
             rank_resnet(state_dict, 110)
         elif args.arch == 'densenet_40':
             rank_densenet(model, state_dict)
+        elif args.arch == 'mobilenet_v2':
+            rank_mobilenetv2(state_dict)
         else:
             raise ValueError("Not implemented arch")
 
