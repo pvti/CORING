@@ -18,7 +18,8 @@ from models.cifar10.resnet import resnet_56, resnet_110
 from models.cifar10.googlenet import googlenet, Inception
 from models.cifar10.densenet import densenet_40
 from models.imagenet.resnet import resnet_50
-from models.cifar10.mobilenetv2 import mobilenet_v2
+#from models.cifar10.mobilenetv2 import mobilenet_v2
+from models.imagenet.mobilenetv2 import mobilenet_v2
 
 import utils.common as utils
 

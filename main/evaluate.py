@@ -701,7 +701,7 @@ def main():
             for k, v in tmp_ckpt.items():
                 new_state_dict[k.replace('module.', '')] = v
 
-        model.load_state_dict(new_state_dict)
+        model.load_state_dict(new_state_dict, strict=False)
         logger.info("loaded checkpoint {} epoch = {}".format(
             checkpoint_dir, checkpoint['epoch']))
     else:
