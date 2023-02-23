@@ -363,8 +363,6 @@ def load_mobilenetv2_model(model, oristate_dict):
     all_honey_conv_weight = []
 
     bn_part_name = ['.weight', '.bias', '.running_mean', '.running_var']
-    prefix = args.rank_conv_prefix+'/rank_conv'
-    subfix = ".npy"
 
     layer_cnt = 1
     conv_cnt = 1
@@ -711,6 +709,8 @@ def main():
             ckpt = torch.load(args.pretrain_dir)
             if args.arch == 'mobilenet_v1':
                 origin_model.load_state_dict(ckpt['state_dict'])
+            elif args.arch == 'mobilenet_v2':
+                origin_model.load_state_dict(ckpt['state_dict'], strict=False)
             else:
                 origin_model.load_state_dict(ckpt)
             oristate_dict = origin_model.state_dict()
