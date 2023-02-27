@@ -150,6 +150,9 @@ parser.set_defaults(random_rank=False)
 
 args = parser.parse_args()
 
+if args.shot == 1:
+    args.calib = 0
+
 # init wandb
 name = args.criterion + '_' + args.compress_rate
 if args.use_onecycle:
