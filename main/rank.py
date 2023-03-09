@@ -9,7 +9,7 @@ from similarity import similarity
 from ranking_strategy import get_saliency
 from decompose import decompose
 
-def get_correlation_mat(all_filters_u_dict, criterion='vbd_dis'):
+def get_correlation_mat(all_filters_u_dict, criterion='VBD_dis'):
     """Caculate correlation matrix between channels in inter-layer
         based on precalculated left-singular vectors dict of hosvd
     """
@@ -32,7 +32,7 @@ def get_correlation_mat(all_filters_u_dict, criterion='vbd_dis'):
     return correlation_mat
 
 
-def get_rank(weight, criterion='vbd_dis', strategy='min_sum'):
+def get_rank(weight, criterion='VBD_dis', strategy='min_sum'):
     """Get rank based on HOSVD + criterion + strategy"""
     num_filters = weight.size(0)
     all_filters_u_dict = {}
