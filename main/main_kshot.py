@@ -615,8 +615,9 @@ def load_densenet_model(model, oristate_dict):
                 if last_select_index is not None:
                     for index_i, i in enumerate(select_index):
                         for index_j, j in enumerate(last_select_index):
-                            state_dict[name_base+name + '.weight'][index_i][index_j] = \
-                                oristate_dict[name + '.weight'][i][j]
+                            if j < len(oristate_dict[name + '.weight'][i]):
+                                state_dict[name_base+name + '.weight'][index_i][index_j] = \
+                                    oristate_dict[name + '.weight'][i][j]
                 else:
                     for index_i, i in enumerate(select_index):
                         state_dict[name_base+name + '.weight'][index_i] = \
@@ -625,8 +626,9 @@ def load_densenet_model(model, oristate_dict):
             elif last_select_index is not None:
                 for i in range(orifilter_num):
                     for index_j, j in enumerate(last_select_index):
-                        state_dict[name_base+name + '.weight'][i][index_j] = \
-                            oristate_dict[name + '.weight'][i][j]
+                        if j < len(oristate_dict[name + '.weight'][i]):
+                            state_dict[name_base+name + '.weight'][i][index_j] = \
+                                oristate_dict[name + '.weight'][i][j]
                 select_index = list(range(0, orifilter_num))
 
             else:
@@ -670,37 +672,37 @@ def get_cpr():
     return cpr
 
 
-def prune(origin_model, compress_rate):
+def prune(input_model, compress_rate):
     # load target model architecture
     logger.info('compress_rate:' + str(compress_rate))
     logger.info('==> Building model..')
-    model = eval(args.arch)(compress_rate=compress_rate).cuda()
-    logger.info(model)
+    prune_model = eval(args.arch)(compress_rate=compress_rate).cuda()
+    logger.info(prune_model)
 
     if len(args.gpu) > 1:
         device_id = []
         for i in range((len(args.gpu) + 1) // 2):
             device_id.append(i)
-        model = nn.DataParallel(model, device_ids=device_id).cuda()
+        prune_model = nn.DataParallel(prune_model, device_ids=device_id).cuda()
 
-    oristate_dict = origin_model.state_dict()
+    inpstate_dict = input_model.state_dict()
     logger.info('Pruning model...')
     if args.arch == 'googlenet':
-        load_google_model(model, oristate_dict)
+        load_google_model(prune_model, inpstate_dict)
     elif args.arch == 'vgg_16_bn':
-        load_vgg_model(model, oristate_dict)
+        load_vgg_model(prune_model, inpstate_dict)
     elif args.arch == 'resnet_56':
-        load_resnet_model(model, oristate_dict, 56)
+        load_resnet_model(prune_model, inpstate_dict, 56)
     elif args.arch == 'resnet_110':
-        load_resnet_model(model, oristate_dict, 110)
+        load_resnet_model(prune_model, inpstate_dict, 110)
     elif args.arch == 'densenet_40':
-        load_densenet_model(model, oristate_dict)
+        load_densenet_model(prune_model, inpstate_dict)
     else:
         raise ValueError("Not implemented arch")
 
     logger.info('Calibrating pruned model...')
     # fix this, args.lr_decay_step
-    local_optimizer = torch.optim.SGD(model.parameters(
+    local_optimizer = torch.optim.SGD(prune_model.parameters(
     ), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     lr_decay_step = list(map(int, args.lr_decay_step.split(',')))
     local_scheduler = torch.optim.lr_scheduler.MultiStepLR(
@@ -708,10 +710,10 @@ def prune(origin_model, compress_rate):
     epoch = 0
     while epoch < math.ceil(args.calib/args.shot):
         train_obj, train_top1_acc,  train_top5_acc = train(
-            epoch,  train_loader, model, criterion, local_optimizer, local_scheduler)
+            epoch,  train_loader, prune_model, criterion, local_optimizer, local_scheduler)
         epoch += 1
 
-    return model
+    return prune_model
 
 
 def main():
@@ -736,7 +738,7 @@ def main():
     cpr = get_cpr()
     # process k-shot pruning
     logger.info(f'Process {args.shot}-shot pruning:')
-    model = origin_model
+    model = copy.deepcopy(origin_model)
     for shot in range(args.shot):
         logger.info(f'Shot {shot}:')
         model = prune(model, cpr[shot])
