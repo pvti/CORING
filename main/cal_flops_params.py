@@ -3,6 +3,7 @@ import torch
 import argparse
 
 from thop import profile
+from ptflops import get_model_complexity_info
 
 from models.cifar10.vgg import vgg_16_bn
 from models.cifar10.resnet import resnet_56, resnet_110
@@ -11,7 +12,9 @@ from models.cifar10.densenet import densenet_40
 
 from models.imagenet.resnet import resnet_50
 from models.imagenet.mobilenetv1 import mobilenet_v1
-from models.imagenet.mobilenetv2 import mobilenet_v2
+#from models.imagenet.mobilenetv2 import mobilenet_v2
+from models.cifar10.mobilenetv2 import mobilenet_v2
+
 
 parser = argparse.ArgumentParser(description='Calculating flops and params')
 
@@ -24,12 +27,13 @@ parser.add_argument(
     '--arch',
     type=str,
     default='vgg_16_bn',
-    choices=('vgg_16_bn','resnet_56','resnet_110','densenet_40','googlenet','resnet_50','mobilenet_v2','mobilenet_v1'),
+    choices=('vgg_16_bn', 'resnet_56', 'resnet_110', 'densenet_40',
+             'googlenet', 'resnet_50', 'mobilenet_v2', 'mobilenet_v1'),
     help='The architecture to prune')
 parser.add_argument(
     '--compress_rate',
     type=str,
-    default=None,
+    default='[0.]*100',
     help='compress rate of each conv')
 args = parser.parse_args()
 
@@ -54,7 +58,7 @@ if args.compress_rate:
     compress_rate = cprate
 
 model = eval(args.arch)(compress_rate=compress_rate).cuda()
-print('compress rate: ',compress_rate)
+print('compress rate: ', compress_rate)
 model.eval()
 
 # calculate model size
@@ -62,6 +66,15 @@ input_image_size = args.input_image_size
 input_image = torch.randn(1, 3, input_image_size, input_image_size).cuda()
 flops, params = profile(model, inputs=(input_image,))
 
-print('Params: %.2f'%(params))
-print('Flops: %.2f'%(flops))
+macs, params_pt = get_model_complexity_info(model,
+                                         (3, input_image_size, input_image_size),
+                                         as_strings=True,
+                                         print_per_layer_stat=True,
+                                         verbose=True)
+print('thop')
+print('Params: %.2f' % (params))
+print('Flops: %.2f' % (flops))
 
+print('ptflops')
+print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
+print('{:<30}  {:<8}'.format('Number of parameters: ', params_pt))
