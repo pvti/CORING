@@ -9,7 +9,6 @@ import argparse
 import math
 import shutil
 from collections import OrderedDict
-from thop import profile
 import wandb
 
 import torch.nn as nn
@@ -726,14 +725,9 @@ def main():
             logger.info('training from scratch')
 
     # evaluate model
-    input_image_size = 224
-    input_image = torch.randn(1, 3, input_image_size, input_image_size).cuda()
-    flops, params = profile(model, inputs=(input_image,))
     _, pruned_acc, _ = validate(val_loader, model, criterion)
-    logger.info('Params: %.2f' % (params))
-    logger.info('Flops: %.2f' % (flops))
     logger.info('Pruned accuracy: %.2f' % (pruned_acc))
-    wandb.log({'params': params, 'flops': flops, 'pruned_acc': pruned_acc})
+    wandb.log({'pruned_acc': pruned_acc})
 
     # train the model
     epoch = start_epoch
