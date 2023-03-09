@@ -23,6 +23,7 @@ from models.cifar10.vgg import vgg_16_bn
 from models.cifar10.resnet import resnet_56, resnet_110
 from models.cifar10.googlenet import googlenet, Inception
 from models.cifar10.densenet import densenet_40
+from models.cifar10.mobilenetv2 import mobilenet_v2
 
 from data import cifar10
 import utils.common as utils
@@ -651,6 +652,116 @@ def load_densenet_model(model, oristate_dict):
     model.load_state_dict(state_dict)
 
 
+def load_mobilenetv2_model(model, oristate_dict):
+
+    state_dict = model.state_dict()
+
+    last_select_index = None
+
+    all_honey_conv_weight = []
+
+    bn_part_name = ['.weight', '.bias', '.running_mean', '.running_var']
+
+    layer_cnt = 1
+    conv_cnt = 1
+    cfg = [1, 2, 3, 4, 3, 3, 1, 1]
+    for layer, num in enumerate(cfg):
+        if layer_cnt == 1:
+            conv_id = [0, 3]
+        elif layer_cnt == 18:
+            conv_id = [0]
+        else:
+            conv_id = [0, 3, 6]
+
+        for k in range(num):
+            if layer_cnt == 18:
+                block_name = 'features.' + str(layer_cnt) + '.'
+            else:
+                block_name = 'features.'+str(layer_cnt)+'.conv.'
+
+            for l in conv_id:
+                conv_cnt += 1
+                conv_name = block_name + str(l)
+                bn_name = block_name + str(l+1)
+
+                conv_weight_name = conv_name + '.weight'
+                all_honey_conv_weight.append(conv_weight_name)
+                oriweight = oristate_dict[conv_weight_name]
+                curweight = state_dict[name_base+conv_weight_name]
+                orifilter_num = oriweight.size(0)
+                currentfilter_num = curweight.size(0)
+
+                if orifilter_num != currentfilter_num:
+                    logger.info(f'computing rank for conv_cnt = {conv_cnt}')
+                    rank = get_rank(oriweight, args.criterion, args.strategy)
+                    select_index = np.argsort(
+                        rank)[orifilter_num - currentfilter_num:]  # preserved filter id
+                    select_index.sort()
+
+                    if (l == 6 or (l == 0 and layer_cnt != 1) or (l == 3 and layer_cnt == 1)) and last_select_index is not None:
+                        for index_i, i in enumerate(select_index):
+                            for index_j, j in enumerate(last_select_index):
+                                state_dict[name_base+conv_weight_name][index_i][index_j] = \
+                                    oristate_dict[conv_weight_name][i][j]
+                            for bn_part in bn_part_name:
+                                state_dict[name_base + bn_name + bn_part][index_i] = \
+                                    oristate_dict[bn_name + bn_part][i]
+                    else:
+                        for index_i, i in enumerate(select_index):
+                            state_dict[name_base+conv_weight_name][index_i] = \
+                                oristate_dict[conv_weight_name][i]
+                            for bn_part in bn_part_name:
+                                state_dict[name_base + bn_name + bn_part][index_i] = \
+                                    oristate_dict[bn_name + bn_part][i]
+
+                    last_select_index = select_index
+
+                elif (l == 6 or (l == 0 and layer_cnt != 1) or (l == 3 and layer_cnt == 1)) and last_select_index is not None:
+                    for index_i in range(orifilter_num):
+                        for index_j, j in enumerate(last_select_index):
+                            state_dict[name_base+conv_weight_name][index_i][index_j] = \
+                                oristate_dict[conv_weight_name][index_i][j]
+                    for bn_part in bn_part_name:
+                        state_dict[name_base + bn_name + bn_part] = \
+                            oristate_dict[bn_name + bn_part]
+                    last_select_index = None
+
+                else:
+                    state_dict[name_base+conv_weight_name] = oriweight
+                    for bn_part in bn_part_name:
+                        state_dict[name_base + bn_name + bn_part] = \
+                            oristate_dict[bn_name + bn_part]
+                    last_select_index = None
+
+                state_dict[name_base + bn_name +
+                           '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
+
+            layer_cnt += 1
+
+    for name, module in model.named_modules():
+        name = name.replace('module.', '')
+        if isinstance(module, nn.Conv2d):
+            conv_name = name + '.weight'
+            bn_name = list(name[:])
+            bn_name[-1] = str(int(name[-1])+1)
+            bn_name = ''.join(bn_name)
+            if conv_name not in all_honey_conv_weight:
+                state_dict[name_base+conv_name] = oristate_dict[conv_name]
+                for bn_part in bn_part_name:
+                    state_dict[name_base + bn_name + bn_part] = \
+                        oristate_dict[bn_name + bn_part]
+                state_dict[name_base + bn_name +
+                           '.num_batches_tracked'] = oristate_dict[bn_name + '.num_batches_tracked']
+
+        elif isinstance(module, nn.Linear):
+            state_dict[name_base+name +
+                       '.weight'] = oristate_dict[name + '.weight']
+            state_dict[name_base+name +
+                       '.bias'] = oristate_dict[name + '.bias']
+
+    model.load_state_dict(state_dict)
+
+
 def get_cpr():
     if args.compress_rate:
         import re
@@ -703,6 +814,8 @@ def prune(origin_model, compress_rate):
         load_resnet_model(model, oristate_dict, 110)
     elif args.arch == 'densenet_40':
         load_densenet_model(model, oristate_dict)
+    elif args.arch == 'mobilenet_v2':
+        load_mobilenetv2_model(model, oristate_dict)
     else:
         raise ValueError("Not implemented arch")
 
@@ -776,6 +889,8 @@ def main():
         for k, v in ckpt['state_dict'].items():
             new_state_dict[k.replace('module.', '')] = v
         origin_model.load_state_dict(new_state_dict)
+    elif args.arch == 'mobilenet_v2':
+        origin_model.load_state_dict(ckpt['state_dict'], strict=False)
     else:
         origin_model.load_state_dict(ckpt['state_dict'])
 
