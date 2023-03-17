@@ -81,3 +81,44 @@ def get_saliency(mat, strategy="sum", dis=1):
             saliency[index] = i
 
     return saliency
+
+
+def filter_rank(S, epsilon=1e-8, max_iter=100):
+    """
+    Implementation of FilterRank algorithm for filter ranking.
+
+    Parameters:
+    S (np.ndarray): Similarity matrix of shape (N, N).
+    epsilon (float): Threshold for convergence. Default: 1e-8.
+    max_iter (int): Maximum number of iterations. Default: 100.
+
+    Returns:
+    np.ndarray: Filter ranking of shape (N,).
+    """
+
+    N = S.shape[0]
+
+    # Construct graph G with nodes representing filters
+    # and edges weighted by similarities in S
+    G = np.zeros((N, N))
+    G[S > 0] = S[S > 0]
+
+    # Normalize the weights of edges incident to each node
+    D = np.diag(np.sum(G, axis=1))
+    D_inv = np.linalg.inv(D)
+    A = G.copy()
+    A_norm = A @ D_inv
+
+    # Initialize probability vector v with equal probabilities for each filter
+    v = np.full(N, 1/N)
+
+    # Run power iteration until convergence
+    for i in range(max_iter):
+        v_new = A_norm @ v
+        v_new = v_new / np.linalg.norm(v_new, ord=1)
+        delta = np.linalg.norm(v_new - v, ord=2)
+        if delta <= epsilon:
+            return v_new
+        v = v_new
+
+    return v
