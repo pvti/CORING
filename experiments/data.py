@@ -25,10 +25,10 @@ def add_noise_to_centroids(centroids, num_similar_filters, noise_std):
 
 filter_size = (3, 3, 64)
 num_centroids = 5
-clusters_std = 0.5
+clusters_std = 1.0
 num_similar_filters = 100
 noise_std = 0.1
-dataset_file = "synthetic_dataset.npy"
+dataset_file = "dataset_1.npy"
 
 if os.path.exists(dataset_file):
     data = np.load(dataset_file, allow_pickle=True)

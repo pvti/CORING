@@ -9,6 +9,12 @@ import wandb
 def parse_args():
     parser = argparse.ArgumentParser("Custom metric for K-means clustering")
     parser.add_argument(
+        "--data",
+        type=str,
+        default="dataset_1.npy",
+        help="path to dataset",
+    )
+    parser.add_argument(
         "--method",
         type=str,
         default="tensor",
@@ -31,7 +37,7 @@ args = parse_args()
 
 
 # Load the synthetic dataset from the file (saved in .npy format)
-dataset_file = "synthetic_dataset.npy"
+dataset_file = args.data
 data = np.load(dataset_file, allow_pickle=True)
 initial_filters = data[0]
 closely_similar_filters = data[1]
@@ -52,7 +58,10 @@ def run():
     )
 
     inertia = min(inertia_list)
-    silhouette = silhouette_score(data_combined_2d, labels)
+    try:
+        silhouette = silhouette_score(data_combined_2d, labels)
+    except Exception:
+        silhouette = 0
 
     return inertia, silhouette, iter
 
@@ -60,8 +69,10 @@ def run():
 def main():
     name = f"{args.method}_{args.distance}"
     wandb.init(name=name, project=f"CORING_CustomKmeans", config=vars(args))
-    inertia_sum = 0
-    silhouette_sum = 0
+
+    inertia_values = []
+    silhouette_values = []
+
     for i in tqdm(range(args.runs)):
         inertia, silhouette, iter = run()
         wandb.log(
@@ -71,11 +82,22 @@ def main():
                 "iteration to converged": iter,
             }
         )
-        inertia_sum += inertia
-        silhouette_sum += silhouette
-    inertia_avg = inertia_sum / args.runs
-    silhouette_avg = silhouette_sum / args.runs
-    print("inertia_avg, silhouette_avg ", inertia_avg, silhouette_avg)
+        inertia_values.append(inertia)
+        silhouette_values.append(silhouette)
+
+    inertia_avg = np.mean(inertia_values)
+    silhouette_avg = np.mean(silhouette_values)
+    inertia_min = np.min(inertia_values)
+    inertia_max = np.max(inertia_values)
+    silhouette_min = np.min(silhouette_values)
+    silhouette_max = np.max(silhouette_values)
+
+    print("inertia_avg:", inertia_avg)
+    print("silhouette_avg:", silhouette_avg)
+    print("inertia_min:", inertia_min)
+    print("inertia_max:", inertia_max)
+    print("silhouette_min:", silhouette_min)
+    print("silhouette_max:", silhouette_max)
 
 
 if __name__ == "__main__":

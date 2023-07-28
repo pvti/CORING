@@ -13,6 +13,12 @@ from decompose import decompose
 def parse_args():
     parser = argparse.ArgumentParser("Custom metric for K-means clustering")
     parser.add_argument(
+        "--data",
+        type=str,
+        default="dataset_1.npy",
+        help="path to dataset",
+    )
+    parser.add_argument(
         "--method",
         type=str,
         default="tensor",
@@ -101,7 +107,7 @@ def custom_kmeans(
 
 if __name__ == "__main__":
     # Load the synthetic dataset from the file (saved in .npy format)
-    dataset_file = "synthetic_dataset.npy"
+    dataset_file = args.data
     data = np.load(dataset_file, allow_pickle=True)
     initial_filters = data[0]
     closely_similar_filters = data[1]
@@ -126,8 +132,11 @@ if __name__ == "__main__":
     # Reshape data_combined to 2-dimensional for silhouette score calculation
     data_combined_2d = data_combined.reshape(data_combined.shape[0], -1)
     # Calculate silhouette score
-    silhouette_avg = silhouette_score(data_combined_2d, labels)
-    print("silhouette_avg:", silhouette_avg)
+    try:
+        silhouette = silhouette_score(data_combined_2d, labels)
+    except Exception:
+        silhouette = 0
+    print("silhouette_avg:", silhouette)
 
     # Visualize the clustered data using PCA in 2-D space
     pca = PCA(n_components=2)
