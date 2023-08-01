@@ -2,7 +2,7 @@ import argparse
 from tqdm.auto import tqdm
 import numpy as np
 from sklearn.metrics import silhouette_score
-from kmeans import custom_kmeans, euclidean_distance
+from kmeans import custom_kmeans
 import wandb
 
 
@@ -17,8 +17,8 @@ def parse_args():
     parser.add_argument(
         "--method",
         type=str,
-        default="tensor",
-        choices=("tensor", "matrix"),
+        default="hosvd",
+        choices=("hosvd", "svd"),
         help="decomposition method",
     )
     parser.add_argument(
@@ -54,7 +54,7 @@ data_combined_2d = data_combined.reshape(data_combined.shape[0], -1)
 def run():
     # Apply custom K-means on the dataset
     centroids, labels, inertia_list, iter = custom_kmeans(
-        data_combined, num_clusters, distance_func=euclidean_distance
+        data_combined, num_clusters, dist=args.distance, decomposer=args.method
     )
 
     inertia = min(inertia_list)

@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 import torch
+from sklearn.metrics import silhouette_score
 
 import sys
 
@@ -21,8 +22,8 @@ def parse_args():
     parser.add_argument(
         "--method",
         type=str,
-        default="tensor",
-        choices=("tensor", "matrix"),
+        default="hosvd",
+        choices=("hosvd", "svd"),
         help="decomposition method",
     )
     parser.add_argument(
@@ -36,26 +37,22 @@ def parse_args():
     return parser.parse_args()
 
 
-args = parse_args()
+def compute_distance(x, y, dist="euclidean", decomposer="hosvd"):
+    ux = decompose(torch.tensor(x), decomposer=decomposer)
+    uy = decompose(torch.tensor(y), decomposer=decomposer)
 
+    if decomposer == "svd":
+        if dist == "euclidean":
+            distance = torch.dist(ux[0], uy[0])
+        elif dist == "vbd":
+            distance = torch.var(ux[0] - uy[0]) / (torch.var(ux[0]) + torch.var(uy[0]))
 
-def euclidean_distance(x, y):
-    if args.method == "matrix":
-        if args.distance == "euclidean":
-            distance = np.linalg.norm(x.flatten() - y.flatten())
-        elif args.distance == "vbd":
-            distance = np.var(x - y) / (np.var(x) + np.var(y))
-
-    elif args.method == "tensor":
-        ux = decompose(torch.tensor(x))
-        uy = decompose(torch.tensor(y))
+    elif decomposer == "hosvd":
         sum = 0.0
         for i in range(3):
-            # print(ux[i].shape)
-            # sum += np.linalg.norm(ux[i], uy[i])
-            if args.distance == "euclidean":
+            if dist == "euclidean":
                 sum += torch.dist(ux[i], uy[i])
-            elif args.distance == "vbd":
+            elif dist == "vbd":
                 sum += torch.var(ux[i] - uy[i]) / (torch.var(ux[i]) + torch.var(uy[i]))
 
         distance = sum.item() / 3
@@ -64,12 +61,13 @@ def euclidean_distance(x, y):
 
 
 def custom_kmeans(
-    data, num_clusters, distance_func=None, max_iters=100, tolerance=1e-12
+    data,
+    num_clusters,
+    dist="euclidean",
+    decomposer="hosvd",
+    max_iters=100,
+    tolerance=1e-12,
 ):
-    if distance_func is None:
-        # Default distance function is Euclidean distance
-        distance_func = lambda x, y: np.linalg.norm(x - y)
-
     # Randomly initialize the centroids from the data points
     centroids_idx = np.random.choice(data.shape[0], num_clusters, replace=False)
     centroids = data[centroids_idx]
@@ -79,7 +77,16 @@ def custom_kmeans(
     for iter in range(max_iters):
         # Assign each data point to the nearest centroid
         labels = np.argmin(
-            np.array([[distance_func(d, c) for c in centroids] for d in data]), axis=1
+            np.array(
+                [
+                    [
+                        compute_distance(d, c, dist=dist, decomposer=decomposer)
+                        for c in centroids
+                    ]
+                    for d in data
+                ]
+            ),
+            axis=1,
         )
 
         # Update the centroids as the mean of the data points in each cluster
@@ -106,6 +113,7 @@ def custom_kmeans(
 
 
 if __name__ == "__main__":
+    args = parse_args()
     # Load the synthetic dataset from the file (saved in .npy format)
     dataset_file = args.data
     data = np.load(dataset_file, allow_pickle=True)
@@ -120,15 +128,13 @@ if __name__ == "__main__":
 
     # Apply custom K-means on the dataset
     centroids, labels, inertia_list, iteration = custom_kmeans(
-        data_combined, num_clusters, distance_func=euclidean_distance
+        data_combined, num_clusters, dist=args.distance, decomposer=args.method
     )
 
     # Print the inertia list for each iteration
     print("Inertia List:", inertia_list)
 
     # Calculate silhouette score
-    from sklearn.metrics import silhouette_score
-
     # Reshape data_combined to 2-dimensional for silhouette score calculation
     data_combined_2d = data_combined.reshape(data_combined.shape[0], -1)
     # Calculate silhouette score
