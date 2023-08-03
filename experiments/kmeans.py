@@ -4,11 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 import torch
 from sklearn.metrics import silhouette_score
-
-import sys
-
-sys.path.append("..")
-from decompose import decompose
+from utils import reshape_decompose, tensor_decompose, VBD
 
 
 def parse_args():
@@ -22,8 +18,8 @@ def parse_args():
     parser.add_argument(
         "--method",
         type=str,
-        default="hosvd",
-        choices=("hosvd", "svd"),
+        default="tensor",
+        choices=("tensor", "matrix"),
         help="decomposition method",
     )
     parser.add_argument(
@@ -33,29 +29,27 @@ def parse_args():
         choices=("euclidean", "vbd", "cosine"),
         help="distance metric",
     )
+    parser.add_argument("--rank", type=int, default=1, help="decomposition rank")
 
     return parser.parse_args()
 
 
-def compute_distance(x, y, dist="euclidean", decomposer="hosvd"):
-    ux = decompose(torch.tensor(x), decomposer=decomposer)
-    uy = decompose(torch.tensor(y), decomposer=decomposer)
+def compute_distance(x, y, dist="euclidean", decomposer="tensor", rank=1):
+    if decomposer == "matrix":
+        x_factors = reshape_decompose(x, rank=rank)
+        y_factors = reshape_decompose(y, rank=rank)
+    elif decomposer == "tensor":
+        x_factors = tensor_decompose(x, rank=rank)
+        y_factors = tensor_decompose(y, rank=rank)
 
-    if decomposer == "svd":
+    sum = 0.0
+    for i in range(len(x_factors)):
         if dist == "euclidean":
-            distance = torch.dist(ux[0], uy[0])
+            sum += torch.dist(x_factors[i], y_factors[i])
         elif dist == "vbd":
-            distance = torch.var(ux[0] - uy[0]) / (torch.var(ux[0]) + torch.var(uy[0]))
+            sum += VBD(x_factors[i], y_factors[i])
 
-    elif decomposer == "hosvd":
-        sum = 0.0
-        for i in range(3):
-            if dist == "euclidean":
-                sum += torch.dist(ux[i], uy[i])
-            elif dist == "vbd":
-                sum += torch.var(ux[i] - uy[i]) / (torch.var(ux[i]) + torch.var(uy[i]))
-
-        distance = sum.item() / 3
+    distance = sum.item() / 3
 
     return distance
 
@@ -64,7 +58,8 @@ def custom_kmeans(
     data,
     num_clusters,
     dist="euclidean",
-    decomposer="hosvd",
+    decomposer="tensor",
+    rank=1,
     max_iters=100,
     tolerance=1e-12,
 ):
@@ -80,7 +75,13 @@ def custom_kmeans(
             np.array(
                 [
                     [
-                        compute_distance(d, c, dist=dist, decomposer=decomposer)
+                        compute_distance(
+                            torch.tensor(d),
+                            torch.tensor(c),
+                            dist=dist,
+                            decomposer=decomposer,
+                            rank=rank,
+                        )
                         for c in centroids
                     ]
                     for d in data
@@ -128,7 +129,11 @@ if __name__ == "__main__":
 
     # Apply custom K-means on the dataset
     centroids, labels, inertia_list, iteration = custom_kmeans(
-        data_combined, num_clusters, dist=args.distance, decomposer=args.method
+        data_combined,
+        num_clusters,
+        dist=args.distance,
+        decomposer=args.method,
+        rank=args.rank,
     )
 
     # Print the inertia list for each iteration
@@ -178,7 +183,9 @@ if __name__ == "__main__":
     # Set plot labels and title
     plt.xlabel("Principal Component 1")
     plt.ylabel("Principal Component 2")
-    plt.title(f"{args.method} {args.distance}")
+    plt.title(
+        f"data = {args.data}; method = {args.method}; distance = {args.distance}; rank = {args.rank}"
+    )
 
     # Add legend
     plt.legend()

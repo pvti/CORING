@@ -17,8 +17,8 @@ def parse_args():
     parser.add_argument(
         "--method",
         type=str,
-        default="hosvd",
-        choices=("hosvd", "svd"),
+        default="tensor",
+        choices=("tensor", "matrix"),
         help="decomposition method",
     )
     parser.add_argument(
@@ -28,6 +28,7 @@ def parse_args():
         choices=("euclidean", "vbd", "cosine"),
         help="distance metric",
     )
+    parser.add_argument("--rank", type=int, default=1, help="decomposition rank")
     parser.add_argument("--runs", type=int, default=100, help="number of runs")
 
     return parser.parse_args()
@@ -54,7 +55,11 @@ data_combined_2d = data_combined.reshape(data_combined.shape[0], -1)
 def run():
     # Apply custom K-means on the dataset
     centroids, labels, inertia_list, iter = custom_kmeans(
-        data_combined, num_clusters, dist=args.distance, decomposer=args.method
+        data_combined,
+        num_clusters,
+        dist=args.distance,
+        decomposer=args.method,
+        rank=args.rank,
     )
 
     inertia = min(inertia_list)
@@ -67,7 +72,7 @@ def run():
 
 
 def main():
-    name = f"{args.method}_{args.distance}"
+    name = f"{args.data}_{args.method}_{args.distance}_{args.rank}"
     wandb.init(name=name, project=f"CORING_CustomKmeans", config=vars(args))
 
     inertia_values = []
