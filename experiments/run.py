@@ -2,7 +2,7 @@ import argparse
 from tqdm.auto import tqdm
 import numpy as np
 from sklearn.metrics import silhouette_score
-from kmeans import custom_kmeans
+from kmeans import custom_kmeans, compute_inter_distance, compute_intra_distance
 import wandb
 
 
@@ -65,10 +65,21 @@ def run():
     inertia = min(inertia_list)
     try:
         silhouette = silhouette_score(data_combined_2d, labels)
+        intra_distance = compute_intra_distance(centroids, data_combined, labels)
+        inter_distance = compute_inter_distance(centroids)
+
     except Exception:
         silhouette = 0
 
-    return inertia, silhouette, iter
+    return inertia, silhouette, iter, intra_distance, inter_distance
+
+
+def compute_std(x):
+    min = np.min(x)
+    avg = np.mean(x)
+    max = np.max(x)
+
+    return min, avg, max
 
 
 def main():
@@ -77,32 +88,42 @@ def main():
 
     inertia_values = []
     silhouette_values = []
+    intra_distances = []
+    inter_distances = []
 
     for i in tqdm(range(args.runs)):
-        inertia, silhouette, iter = run()
+        inertia, silhouette, iter, intra_distance, inter_distance = run()
         wandb.log(
             {
                 "inertia": inertia,
                 "silhouette": silhouette,
+                "intra_distance": intra_distance,
+                "inter_distance": inter_distance,
                 "iteration to converged": iter,
             }
         )
         inertia_values.append(inertia)
         silhouette_values.append(silhouette)
+        intra_distances.append(intra_distance)
+        inter_distances.append(inter_distance)
 
-    inertia_avg = np.mean(inertia_values)
-    silhouette_avg = np.mean(silhouette_values)
-    inertia_min = np.min(inertia_values)
-    inertia_max = np.max(inertia_values)
-    silhouette_min = np.min(silhouette_values)
-    silhouette_max = np.max(silhouette_values)
+    inertia_min, inertia_avg, inertia_max = compute_std(inertia_values)
+    silhouette_min, silhouette_avg, silhouette_max = compute_std(silhouette_values)
+    intra_min, intra_avg, intra_max = compute_std(intra_distances)
+    inter_min, inter_avg, inter_max = compute_std(inter_distances)
 
-    print("inertia_avg:", inertia_avg)
-    print("silhouette_avg:", silhouette_avg)
     print("inertia_min:", inertia_min)
+    print("inertia_avg:", inertia_avg)
     print("inertia_max:", inertia_max)
     print("silhouette_min:", silhouette_min)
+    print("silhouette_avg:", silhouette_avg)
     print("silhouette_max:", silhouette_max)
+    print("intra_min", intra_min)
+    print("intra_avg", intra_avg)
+    print("intra_max", intra_max)
+    print("inter_min", inter_min)
+    print("inter_avg", inter_avg)
+    print("inter_max", inter_max)
 
 
 if __name__ == "__main__":

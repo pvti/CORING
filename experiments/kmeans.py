@@ -113,6 +113,26 @@ def custom_kmeans(
     return centroids, labels, inertia_list, iter
 
 
+def compute_intra_distance(centroids, data, labels):
+    intra_distance = 0.0
+    for i in range(len(centroids)):
+        centroid = centroids[i]
+        satellite_indices = np.where(labels == i)[0]
+        satellites = data[satellite_indices]
+        for satellite in satellites:
+            intra_distance += np.linalg.norm(satellite - centroid)
+    return intra_distance
+
+
+def compute_inter_distance(centroids):
+    inter_distance = 0.0
+    num_centroids = len(centroids)
+    for i in range(num_centroids):
+        for j in range(i + 1, num_centroids):
+            inter_distance += np.linalg.norm(centroids[i] - centroids[j])
+    return inter_distance
+
+
 if __name__ == "__main__":
     args = parse_args()
     # Load the synthetic dataset from the file (saved in .npy format)
@@ -148,6 +168,14 @@ if __name__ == "__main__":
     except Exception:
         silhouette = 0
     print("silhouette_avg:", silhouette)
+
+    # Compute Intra Distance
+    intra_distance = compute_intra_distance(centroids, data_combined, labels)
+    print("Intra Distance:", intra_distance)
+
+    # Compute Inter Distance
+    inter_distance = compute_inter_distance(centroids)
+    print("Inter Distance:", inter_distance)
 
     # Visualize the clustered data using PCA in 2-D space
     pca = PCA(n_components=2)
