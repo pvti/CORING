@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 import torch
 from sklearn.metrics import silhouette_score
-from utils import reshape_decompose, tensor_decompose, VBD
+from utils import svd, tensor_decompose, VBD
 
 
 def parse_args():
@@ -36,8 +36,8 @@ def parse_args():
 
 def compute_distance(x, y, dist="euclidean", decomposer="tensor", rank=1):
     if decomposer == "matrix":
-        x_factors = reshape_decompose(x, rank=rank)
-        y_factors = reshape_decompose(y, rank=rank)
+        x_factors = svd(x, rank=rank)
+        y_factors = svd(y, rank=rank)
     elif decomposer == "tensor":
         x_factors = tensor_decompose(x, rank=rank)
         y_factors = tensor_decompose(y, rank=rank)
