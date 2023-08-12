@@ -1,6 +1,6 @@
 
 <p align="center" width="100%">
-<img src="assets\ring.png"  width="33%" height="33%">
+<img src="assets\ring.png"  width="20%" height="20%">
 </p>
 
 <div>
@@ -32,7 +32,7 @@
 
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
-* **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. Part of the project will be presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :mega: :clap:.
+* **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. Part of the project will be :mega: presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :clap:.
 * **2023.8.12:** Baseline and compressed checkpoints :gift: are released.
 
 
@@ -44,7 +44,7 @@ Project is under development :construction_worker:. Please stay tuned for more :
      Comparison of pruning methods for VGG-16 on CIFAR-10.
 </div>
 
-<div style="text-align: justify"> CORING is evaluated on  various benchmark datasets with well-known and representative architectures including the classic plain structure VGG-16-BN, the GoogLeNet with inception modules, the ResNet-56 with resisual blocks, the DenseNet-40 with dense blocks and the MobileNetV2 with inverted residuals and linear bottlenecks. Due to large number of simulations, these models are all considered on CIFAR-10. Also, to validate the scalability of CORING, we conduct experiments on the challenging ImageNet dataset with ResNet-50. </div>
+<div style="text-align: justify"> CORING is evaluated on  various benchmark datasets with well-known and representative architectures including the classic plain structure VGG-16-BN, the GoogLeNet with inception modules, the ResNet-56 with residual blocks, the DenseNet-40 with dense blocks and the MobileNetV2 with inverted residuals and linear bottlenecks. Due to a large number of simulations, these models are all considered on CIFAR-10. Also, to validate the scalability of CORING, we conduct experiments on the challenging ImageNet dataset with ResNet-50. </div>
  
 
 <details>
@@ -288,7 +288,7 @@ Main requirements:
   <details>
 
   ```bash
-  python main/test.py --dataset cifar10 --data_dir data/cifar10 --arch vgg_16_bn --compress_rate [0.21]*7+[0.75]*5 --model_path ./pruned_model/cifar10/vgg16bn/soft/model_best.pth.tar
+    python main/test.py --dataset cifar10 --data_dir data/cifar10 --arch vgg_16_bn --compress_rate [0.21]*7+[0.75]*5 --model_path ./pruned_model/cifar10/vgg16bn/soft/model_best.pth.tar
     python main/test.py --dataset cifar10 --data_dir data/cifar10 --arch resnet_56 --compress_rate [0.]+[0.18]*29 --model_path ./pruned_model/cifar10/resnet56/soft/model_best.pth.tar
     python main/test.py --dataset cifar10 --data_dir data/cifar10 --arch densenet_40 --compress_rate [0.]+[0.08]*6+[0.09]*6+[0.08]*26 --model_path ./pruned_model/cifar10/densenet/soft/model_best.pth.tar
     python main/test.py --dataset cifar10 --data_dir data/cifar10 --arch mobilenet_v2 --compress_rate [0.]+[0.1]+[0.25]*2+[0.25]*2+[0.3]*2 --model_path ./pruned_model/cifar10/mobilenetv2/moderate/model_best.pth.tar
@@ -297,10 +297,10 @@ Main requirements:
   </details>
 
 
-# Reproducibility and further developpement
+# Reproducibility and further development
 1. To reproduce results, you may run prepared scripts.
 - For CIFAR-10, the rank will be calculated during the pruning process.
-- For Resnet50/ImageNet, first generate the rank by this:
+- For Resnet50/ImageNet, first, generate the rank by this:
     ```
     sh main/scripts/generate_rank_resnet50.sh
     ```
@@ -308,7 +308,7 @@ Main requirements:
     ```
     sh main/scripts/resnet50_imagenet/vbd.sh
     ```
-2. Our code is pipelined and can be integrated in other works. Just replace the filter ranking computation.
+2. Our code is pipelined and can be integrated into other works. Just replace the filter ranking computation.
     ```
     # replace your rank calculation here
     rank = get_rank(oriweight, args.criterion, args.strategy)
@@ -329,7 +329,7 @@ To contact us, never hesitate to contact [pvtien96@gmail.com](mailto:pvtien96@gm
 # Citation
 If the code and paper help your research, please kindly cite:
 ```
-@misc{pham2023norton,
+@misc{pham2023coring,
     title={Efficient tensor decomposition-based filter pruning}, 
     author={Van Tien, Pham and Yassine, Zniyed and Thanh Phuong, Nguyen},
     year={2023},
