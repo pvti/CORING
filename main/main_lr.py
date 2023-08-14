@@ -221,7 +221,7 @@ def load_vgg_model(model, oristate_dict):
 
                 cov_id = cnt
                 logger.info(f'computing rank for cov_id = {cov_id} ')
-                rank = get_rank(oriweight, args.criterion, args.strategy)
+                rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                 if args.random_rank:
                     rank = np.random.random_sample(rank.shape)
                 select_index = np.argsort(
@@ -284,7 +284,7 @@ def load_resnet_model(model, oristate_dict, layer):
 
                 if orifilter_num != currentfilter_num:
                     logger.info(f'computing rank for cov_id = {cov_id} ')
-                    rank = get_rank(oriweight, args.criterion, args.strategy)
+                    rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     # preserved filter id
@@ -451,7 +451,7 @@ def load_google_model(model, oristate_dict):
                 if orifilter_num != currentfilter_num:
                     logger.info(
                         f'computing rank for name = {name} weight_index = {weight_index} conv_name = {conv_name}')
-                    rank = get_rank(oriweight, args.criterion, args.strategy)
+                    rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(
@@ -504,7 +504,7 @@ def load_google_model(model, oristate_dict):
                 if orifilter_num != currentfilter_num:
                     logger.info(
                         f'computing rank for name = {name} weight_index = {weight_index} conv_name = {conv_name}')
-                    rank = get_rank(oriweight, args.criterion, args.strategy)
+                    rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(
@@ -549,7 +549,7 @@ def load_google_model(model, oristate_dict):
                 if orifilter_num != currentfilter_num:
                     logger.info(
                         f'computing rank for name = {name} weight_index = {weight_index} conv_name = {conv_name}')
-                    rank = get_rank(oriweight, args.criterion, args.strategy)
+                    rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                     if args.random_rank:
                         rank = np.random.random_sample(rank.shape)
                     select_index = np.argsort(
@@ -613,7 +613,7 @@ def load_densenet_model(model, oristate_dict):
 
             if orifilter_num != currentfilter_num:
                 logger.info(f'computing rank for cov_id = {cov_id} ')
-                rank = get_rank(oriweight, args.criterion, args.strategy)
+                rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                 if args.random_rank:
                     rank = np.random.random_sample(rank.shape)
                 # preserved filter id
@@ -693,7 +693,7 @@ def load_mobilenetv2_model(model, oristate_dict):
 
                 if orifilter_num != currentfilter_num:
                     logger.info(f'computing rank for conv_cnt = {conv_cnt}')
-                    rank = get_rank(oriweight, args.criterion, args.strategy)
+                    rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                     select_index = np.argsort(
                         rank)[orifilter_num - currentfilter_num:]  # preserved filter id
                     select_index.sort()

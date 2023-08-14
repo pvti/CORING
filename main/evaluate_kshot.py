@@ -248,7 +248,7 @@ def load_resnet_model(model, oristate_dict):
 
     if orifilter_num != currentfilter_num:
         logger.info(f'computing rank for cnt = {cnt}')
-        rank = get_rank(oriweight, args.criterion, args.strategy)
+        rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
         select_index = np.argsort(
             rank)[orifilter_num - currentfilter_num:]  # preserved filter id
         select_index.sort()
@@ -303,7 +303,7 @@ def load_resnet_model(model, oristate_dict):
 
                 if orifilter_num != currentfilter_num:
                     logger.info(f'computing rank for cnt = {cnt}')
-                    rank = get_rank(oriweight, args.criterion, args.strategy)
+                    rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                     select_index = np.argsort(
                         rank)[orifilter_num - currentfilter_num:]  # preserved filter id
                     select_index.sort()
@@ -412,7 +412,7 @@ def load_mobilenetv2_model(model, oristate_dict):
 
                 if orifilter_num != currentfilter_num:
                     logger.info(f'computing rank for conv_cnt = {conv_cnt}')
-                    rank = get_rank(oriweight, args.criterion, args.strategy)
+                    rank = get_rank(oriweight, criterion=args.criterion, strategy=args.strategy)
                     select_index = np.argsort(
                         rank)[orifilter_num - currentfilter_num:]  # preserved filter id
                     select_index.sort()
