@@ -1,8 +1,29 @@
 
 <p align="center" width="100%">
-<img src="assets\ring.png"  width="20%" height="20%">
+    <img src="assets\ring.png" width="20%" height="20%">
 </p>
 
+<div align="center">
+    <em>
+        "One model to compress them all, one approach to refine efficiency,<br>
+        One method to decompose tensors and enhance neural proficiency.<br>
+        In the realm of filters, CORING stands tall and true,<br>
+        Preserving dimensions, accuracy it will accrue.<br>
+        Experiments demonstrate its prowess, architectures put to test,<br>
+        FLOPS and parameters reduced, accuracy manifest.<br>
+        Like ResNet-50 in ImageNet's vast domain,<br>
+        Memory and computation requirements it does restrain.<br>
+        Efficiency elevated, generalization takes its flight,<br>
+        In the world of neural networks, C:ring:RING shines its light."
+    </em>
+</div>
+
+
+-----------------
+![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fpvtien96%2FSNRPruning&countColor=%23263759)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+# :ring: Efficient tensor-based filter pruning
 <div>
 <div align="center">
     <a href='https://github.com/pvtien96' target='_blank'>Van Tien PHAM<sup>1,&#x2709</sup></a>&emsp;
@@ -15,12 +36,6 @@
     <sup>1</sup>Université de Toulon, Aix Marseille Université, CNRS, LIS, UMR 7020, France&emsp;
     <sup>&#x2709</sup> Corresponding Author
 </div>
-
------------------
-![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fpvtien96%2FSNRPruning&countColor=%23263759)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-# :ring: Efficient tensor-based filter pruning
 <div style="text-align: justify"> We present a novel filter pruning method for neural networks, named CORING, for effiCient tensOr decomposition-based filteR prunING. The proposed approach preserves the multidimensional nature of filters by employing tensor decomposition. Our approach leads to a more efficient and accurate way to measure the similarity, compared to traditional methods that use vectorized or matricized versions of filters. This results in more efficient filter pruning without losing valuable information. Experiments conducted on various architectures proved its effectiveness. Particularly, the numerical results show that CORING outperforms state-of-the-art methods in terms of FLOPS and parameters reduction, and validation accuracy. Moreover, CORING demonstrates its ability to increase model generalization by boosting accuracy on several experiments. For example, with VGG-16, we achieve a 58.1% FLOPS reduction by removing 81.6% of the parameters, while increasing the accuracy by 0.46% on CIFAR-10. Even on the large scale ImageNet, for ResNet-50, the top-1 accuracy increased by 0.63%, while reducing 40.8% and 44.8% of memory and computation requirements, respectively. </div>
 
 <div>
