@@ -330,6 +330,35 @@ Main requirements:
     rank = get_rank(oriweight, args.criterion, args.strategy)
     ```
 
+
+# :art: Supplementary materials
+1. **Poster**
+<div>
+  <img class="image" src="assets\poster.png" width="100%" height="100%">
+</div>
+
+2. **Architecture constraint**
+<p align="center" width="100%">
+    <img src="assets\residual.png" width="60%" height="60%">
+</p>
+
+With shortcut connection architecture, input and output of each residual block are forced identical. In each layer (*i.e,* same color), filters with same style (*e.g,* sketch) are highly similar, and the empty dashed one are to be pruned. After pruning, the input and output layer (*green and red*) has the same number of filters.
+
+3. **Computational requirement comparison**
+<p align="center" width="100%">
+    <img src="assets\time_benchmark.png" width="50%" height="50%">
+</p>
+
+Time consumption to calculate the similarity matrix on VGG-16-BN. For tail layers that contain a larger number of filters, the tensor decomposition method is obviously more efficient.
+
+4. **Criteria comparison.**
+<p align="center" width="100%">
+    <img src="assets\criteria_comparison.png" width="50%" height="50%">
+</p>
+
+A comprehensive ablation study on CIFAR-10, showcasing comparable final accuracies achieved with the 3 considered distances.
+
+
 # :bookmark_tabs: ToDo
 - [ ] Integrate other pruning techniques.
 - [ ] Clean code.
