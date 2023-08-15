@@ -63,6 +63,35 @@ def calculate_entropy(tensor):
     return entropy
 
 
+def svd_complexity(M, N, R=1):
+    """
+    Compute the complexity of the SVD of a matrix of size MxN for rank R
+    """
+
+    return 2 * R * M * N + 2 * R**2 * (M + N)
+
+
+def compute_params_complexity(filters, decomposer="hosvd"):
+    """
+    Compute the number of parameters of the representation and the complexity of the decomposition process
+    """
+    out_channels, in_channels, kernel_size, _ = filters.size()
+    # 1 filter
+    if decomposer == "svd":
+        params = in_channels + kernel_size**2
+        complexity = svd_complexity(in_channels, kernel_size**2)
+    else:
+        params = in_channels + 2 * kernel_size
+        complexity = svd_complexity(in_channels, kernel_size**2) + 2 * svd_complexity(
+            kernel_size, in_channels * kernel_size
+        )
+    # all filters
+    params *= out_channels
+    complexity *= out_channels
+
+    return params, complexity
+
+
 def process_1_layer(
     layer: nn.Conv2d,
     keep_ratio: float,
@@ -94,7 +123,17 @@ def process_1_layer(
     filter_entropies = [calculate_entropy(filter) for filter in reshaped_filters]
     average_entropy = np.mean(filter_entropies)
 
-    return total_euclidean_distance, average_euclidean_distance, average_entropy
+    params, complexity = compute_params_complexity(
+        filters_selected, decomposer=decomposer
+    )
+
+    return (
+        total_euclidean_distance,
+        average_euclidean_distance,
+        average_entropy,
+        params,
+        complexity,
+    )
 
 
 def main():
@@ -116,7 +155,13 @@ def main():
         name = name.replace("module.", "")
         if isinstance(module, nn.Conv2d):
             print(f"processing {name}")
-            Eu_distance_sum, Eu_distance_avg, entropy = process_1_layer(
+            (
+                Eu_distance_sum,
+                Eu_distance_avg,
+                entropy,
+                params,
+                complexity,
+            ) = process_1_layer(
                 layer=module,
                 keep_ratio=args.keep_ratio,
                 decomposer=args.decomposer,
@@ -128,7 +173,8 @@ def main():
                 {
                     "layer_th": layer_th,
                     "Euclide_distance_sum": Eu_distance_sum,
-                    "Euclide_distance_avg": Eu_distance_avg,
+                    "params": params,
+                    "complexity": complexity,
                 }
             )
 
