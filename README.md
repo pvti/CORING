@@ -33,8 +33,8 @@
 <div>
 
 <div align="center">
-    <sup>1</sup>Université de Toulon, Aix Marseille Université, CNRS, LIS, UMR 7020, France&emsp;
-    <sup>&#x2709</sup> Corresponding Author
+    <sup>1</sup><em>Université de Toulon, Aix Marseille Université, CNRS, LIS, UMR 7020, France</em>&emsp;
+    <sup>&#x2709</sup><em>Corresponding Author</em>
 </div>
 <div style="text-align: justify"> We present a novel filter pruning method for neural networks, named CORING, for effiCient tensOr decomposition-based filteR prunING. The proposed approach preserves the multidimensional nature of filters by employing tensor decomposition. Our approach leads to a more efficient and accurate way to measure the similarity, compared to traditional methods that use vectorized or matricized versions of filters. This results in more efficient filter pruning without losing valuable information. Experiments conducted on various architectures proved its effectiveness. Particularly, the numerical results show that CORING outperforms state-of-the-art methods in terms of FLOPS and parameters reduction, and validation accuracy. Moreover, CORING demonstrates its ability to increase model generalization by boosting accuracy on several experiments. For example, with VGG-16, we achieve a 58.1% FLOPS reduction by removing 81.6% of the parameters, while increasing the accuracy by 0.46% on CIFAR-10. Even on the large scale ImageNet, for ResNet-50, the top-1 accuracy increased by 0.63%, while reducing 40.8% and 44.8% of memory and computation requirements, respectively. </div>
 
@@ -269,19 +269,12 @@ Project is under development :construction_worker:. Please stay tuned for more :
 </details>
 
 
-# Installation
-Main requirements:
-```
-- python=3.9
-- pytorch >= 1.13
-- tensorly=0.7
-- numpy=1.21
-- thop=0.1
-- ptflops
+# :wrench: Installation
+```bash
+pip install torch tensorly numpy thop ptflops
 ```
 
-
-# Verification of our results
+# :unlock: Verification of our results
   Please download the [checkpoints](https://drive.google.com/drive/folders/1UfDCJ2x-Tp-4m51AfuTie_gV2N-YNYTl?usp=sharing) and evaluate their performance with the corresponding script and dataset.
 
 - All results are available [here](https://drive.google.com/drive/folders/1UfDCJ2x-Tp-4m51AfuTie_gV2N-YNYTl?usp=sharing).
@@ -313,7 +306,7 @@ Main requirements:
   </details>
 
 
-# Reproducibility and further development
+# :octocat: Reproducibility and further development
 1. To reproduce results, you may run prepared scripts.
 - For CIFAR-10, the rank will be calculated during the pruning process.
 - For Resnet50/ImageNet, first, generate the rank by this:
