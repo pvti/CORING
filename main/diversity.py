@@ -31,7 +31,7 @@ def parse_args():
     )
     parser.add_argument("--strategy", default="min_sum", type=str, help="strategy")
     parser.add_argument(
-        "-kr", "--keep-ratio", type=float, default=0.7, help="keep ratio"
+        "-kr", "--keep-ratio", type=float, default=0.75, help="keep ratio"
     )
 
     return parser.parse_args()
@@ -41,7 +41,7 @@ def pairwise_euclidean_distance(tensor1, tensor2):
     return torch.norm(tensor1 - tensor2, p=2)
 
 
-def calculate_average_euclidean_distance(filters):
+def calculate_euclidean_distance(filters):
     total_euclidean_distance = 0.0
     num_pairs = 0
 
@@ -51,7 +51,9 @@ def calculate_average_euclidean_distance(filters):
             total_euclidean_distance += distance
             num_pairs += 1
 
-    return total_euclidean_distance / num_pairs
+    average_euclidean_distance = total_euclidean_distance / num_pairs
+
+    return total_euclidean_distance, average_euclidean_distance
 
 
 def calculate_entropy(tensor):
@@ -83,21 +85,23 @@ def process_1_layer(
     select_index.sort()
     filters_selected = weight[select_index]
 
-    average_euclidean_distance = calculate_average_euclidean_distance(filters_selected)
+    total_euclidean_distance, average_euclidean_distance = calculate_euclidean_distance(
+        filters_selected
+    )
 
     # entropy
     reshaped_filters = filters_selected.view(number_filters_selected, -1)
     filter_entropies = [calculate_entropy(filter) for filter in reshaped_filters]
     average_entropy = np.mean(filter_entropies)
 
-    return average_euclidean_distance, average_entropy
+    return total_euclidean_distance, average_euclidean_distance, average_entropy
 
 
 def main():
     args = parse_args()
-    project_name = f"CORING DiversityComparison criterion={args.criterion} strategy={args.strategy} keep_ratio={args.keep_ratio}"
+    project_name = f"CORING DiversityComparison criterion={args.criterion} strategy={args.strategy}"
     wandb.init(
-        name=args.decomposer,
+        name=f"{args.decomposer} {args.keep_ratio}",
         project=project_name,
         config=vars(args),
     )
@@ -112,7 +116,7 @@ def main():
         name = name.replace("module.", "")
         if isinstance(module, nn.Conv2d):
             print(f"processing {name}")
-            Eu_distance, entropy = process_1_layer(
+            Eu_distance_sum, Eu_distance_avg, entropy = process_1_layer(
                 layer=module,
                 keep_ratio=args.keep_ratio,
                 decomposer=args.decomposer,
@@ -123,8 +127,8 @@ def main():
             wandb.log(
                 {
                     "layer_th": layer_th,
-                    "Euclide_distance": Eu_distance,
-                    "entropy": entropy,
+                    "Euclide_distance_sum": Eu_distance_sum,
+                    "Euclide_distance_avg": Eu_distance_avg,
                 }
             )
 
