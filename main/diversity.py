@@ -33,6 +33,16 @@ def parse_args():
     parser.add_argument(
         "-kr", "--keep-ratio", type=float, default=0.75, help="keep ratio"
     )
+    parser.add_argument(
+        "--mode",
+        type=int,
+        default=0,
+        choices=(0, 1, 2),
+        help="unfolding mode, for svd only",
+    )
+    parser.add_argument(
+        "--rank", type=int, default=1, choices=(1, 2, 3), help="decomposition rank"
+    )
 
     return parser.parse_args()
 
@@ -71,20 +81,24 @@ def svd_complexity(M, N, R=1):
     return 2 * R * M * N + 2 * R**2 * (M + N)
 
 
-def compute_params_complexity(filters, decomposer="hosvd"):
+def compute_params_complexity(filters, decomposer="hosvd", rank=1, mode=0):
     """
     Compute the number of parameters of the representation and the complexity of the decomposition process
     """
     out_channels, in_channels, kernel_size, _ = filters.size()
     # 1 filter
     if decomposer == "svd":
-        params = in_channels + kernel_size**2
-        complexity = svd_complexity(in_channels, kernel_size**2)
+        if mode == 0:  # Cin x (dxd)
+            params = rank * (in_channels + kernel_size**2)
+            complexity = svd_complexity(in_channels, kernel_size**2, rank)
+        elif mode == 1 or mode == 2:  # (dxCin) x d
+            params = rank * (in_channels * kernel_size + kernel_size)
+            complexity = svd_complexity(in_channels * kernel_size, kernel_size, rank)
     else:
-        params = in_channels + 2 * kernel_size
-        complexity = svd_complexity(in_channels, kernel_size**2) + 2 * svd_complexity(
-            kernel_size, in_channels * kernel_size
-        )
+        params = rank * (in_channels + 2 * kernel_size)
+        complexity = svd_complexity(
+            in_channels, kernel_size**2, rank
+        ) + 2 * svd_complexity(kernel_size, in_channels * kernel_size, rank)
     # all filters
     params *= out_channels
     complexity *= out_channels
@@ -96,6 +110,8 @@ def process_1_layer(
     layer: nn.Conv2d,
     keep_ratio: float,
     decomposer="hosvd",
+    rank=1,
+    mode=0,
     criterion="Euclide_dis",
     strategy="min_sum",
 ):
@@ -105,6 +121,8 @@ def process_1_layer(
     saliency = get_rank(
         weight=weight,
         decomposer=decomposer,
+        rank=rank,
+        mode=mode,
         criterion=criterion,
         strategy=strategy,
     )
@@ -124,7 +142,10 @@ def process_1_layer(
     average_entropy = np.mean(filter_entropies)
 
     params, complexity = compute_params_complexity(
-        filters_selected, decomposer=decomposer
+        filters_selected,
+        decomposer=decomposer,
+        rank=rank,
+        mode=mode,
     )
 
     return (
@@ -138,9 +159,9 @@ def process_1_layer(
 
 def main():
     args = parse_args()
-    project_name = f"CORING DiversityComparison criterion={args.criterion} strategy={args.strategy}"
+    project_name = f"CORING DiversityComparison rank={args.rank} criterion={args.criterion} strategy={args.strategy}"
     wandb.init(
-        name=f"{args.decomposer} {args.keep_ratio}",
+        name=f"{args.decomposer} rank={args.rank} mode={args.mode} kr={args.keep_ratio}",
         project=project_name,
         config=vars(args),
     )
@@ -165,6 +186,8 @@ def main():
                 layer=module,
                 keep_ratio=args.keep_ratio,
                 decomposer=args.decomposer,
+                rank=args.rank,
+                mode=args.mode,
                 criterion=args.criterion,
                 strategy=args.strategy,
             )
