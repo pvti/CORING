@@ -14,10 +14,10 @@ def get_num_unfold(decomposer):
 
 
 def get_u_svd(x, rank=1):
-    """Perform SVD, return rank firsst columns of u"""
+    """Perform SVD, return rank first columns of u"""
     u, _, _ = torch.linalg.svd(x, full_matrices=False)
 
-    return u[:, rank]
+    return u[:, :rank]
 
 
 def decompose(x, decomposer="hosvd", rank=1, mode=0):
