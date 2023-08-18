@@ -22,7 +22,7 @@ As [recommended](https://github.com/pytorch/vision/blob/87d54c4e583207e7b003d6b5
 
 ### Faster R-CNN ResNet-50 FPN
 ```
-torchrun --nproc_per_node=8 train.py --dataset coco --model fasterrcnn_resnet50_fpn --epochs 26 --lr-steps 16 22 --aspect-ratio-group-factor 3 --weights-backbone resnet50.pt -cpr [0.]+[0.1]*3+[0.35]*16 --lr 0.02 -b 2
+torchrun --nproc_per_node=8 train.py --dataset coco --model fasterrcnn_resnet50_fpn --epochs 26 --lr-steps 16 22 --aspect-ratio-group-factor 3 --weights-backbone resnet50.pt -cpr [0.]+[0.1]*3+[0.35]*16
 ```
 
 ### Mask R-CNN
