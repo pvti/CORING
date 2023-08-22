@@ -30,8 +30,19 @@ torchrun --nproc_per_node=8 train.py --dataset coco --model fasterrcnn_resnet50_
 torchrun --nproc_per_node=8 train.py --dataset coco --model maskrcnn_resnet50_fpn --epochs 26 --lr-steps 16 22 --aspect-ratio-group-factor 3 --weights-backbone resnet50.pt -cpr [0.]+[0.1]*3+[0.35]*16
 ```
 
-
 ### Keypoint R-CNN
 ```
 torchrun --nproc_per_node=8 train.py --dataset coco_kp --model keypointrcnn_resnet50_fpn --epochs 46 --lr-steps 36 43 --aspect-ratio-group-factor 3 --weights-backbone resnet50.pt -cpr [0.]+[0.1]*3+[0.35]*16
 ```
+
+
+# Visualizing model inference
+Compressed models can be deployed as [torchvision's guide](https://pytorch.org/vision/stable/models.html#object-detection-instance-segmentation-and-person-keypoint-detection).
+
+For your convenience, we have also prepared an example script, [visualize.py](./visualize.py), that emphasizes the enhanced FPS achieved by the pruned model. Below is the example usage:
+
+```
+python visualize.py --input birthday.mp4 --custom -cpr [0.]+[0.1]*3+[0.35]*16 --weight model_24.pth
+```
+
+By using this script, you can effortlessly visualize and compare the inference speed of both the baseline and pruned models. This provides a clear demonstration of the substantial throughput acceleration achieved by CORING's compression techniques.
