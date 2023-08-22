@@ -48,7 +48,7 @@
 
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
-* **2023.8.22:** Throughput acceleration :stars: experiment is released.
+* **2023.8.22:** Throughput acceleration :stars: experiment is released :tada:.
 * **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. Part of the project will be :mega: presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :clap:.
 * **2023.8.12:** Baseline and compressed checkpoints :gift: are released.
 
@@ -353,16 +353,18 @@ Time consumption to calculate the similarity matrix on VGG-16-BN. For tail layer
 A comprehensive ablation study on CIFAR-10, showcasing comparable final accuracies achieved with the 3 considered distances.
 
 5. **Throughput acceleration.**
-<div style="display: flex;">
-  <div style="flex: 50%; padding: 10px;">
-    <img src="assets/baseline.gif" alt="Baseline" width="100%">
-  </div>
-  <div style="flex: 50%; padding: 10px;">
-    <img src="assets/pruned.gif" alt="Pruned" width="100%">
-  </div>
-</div>
+<table style="width: 100%; border: none; border-collapse: collapse;">
+  <tr>
+    <td style="width: 50%; padding: 10px; border: none;">
+      <img src="assets/baseline.gif" alt="Baseline" style="width: 100%;">
+    </td>
+    <td style="width: 50%; padding: 10px; border: none;">
+      <img src="assets/pruned.gif" alt="Pruned" style="width: 100%;">
+    </td>
+  </tr>
+</table>
 
-<div align="center ">
+<div align="center">
     Baseline (<em>left</em>) vs Pruned (<em>right</em>) model inference.
 </div>
 
