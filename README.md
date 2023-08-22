@@ -326,33 +326,33 @@ pip install torch tensorly numpy thop ptflops
 
 
 # :art: Supplementary materials
-1. **Poster**
+## 1. Poster
 <div>
   <img class="image" src="assets\poster.png" width="100%" height="100%">
 </div>
 
-2. **Architecture constraint**
+## 2. Architecture constraint
 <p align="center" width="100%">
     <img src="assets\residual.png" width="60%" height="60%">
 </p>
 
-With shortcut connection architecture, input and output of each residual block are forced identical. In each layer (*i.e,* same color), filters with same style (*e.g,* sketch) are highly similar, and the empty dashed one are to be pruned. After pruning, the input and output layer (*green and red*) has the same number of filters.
+With shortcut connection architecture, the input and output of each residual block are forced identical. In each layer (*i.e,* same color), filters with the same style (*e.g,* sketch) are highly similar, and the empty dashed ones are to be pruned. After pruning, the input and output layer (*green and red*) has the same number of filters.
 
-3. **Computational requirement comparison**
+## 3. Computational requirement comparison
 <p align="center" width="100%">
     <img src="assets\time_benchmark.png" width="50%" height="50%">
 </p>
 
 Time consumption to calculate the similarity matrix on VGG-16-BN. For tail layers that contain a larger number of filters, the tensor decomposition method is obviously more efficient.
 
-4. **Criteria comparison.**
+## 4. Criteria comparison.
 <p align="center" width="100%">
     <img src="assets\criteria_comparison.png" width="50%" height="50%">
 </p>
 
 A comprehensive ablation study on CIFAR-10, showcasing comparable final accuracies achieved with the 3 considered distances.
 
-5. **Throughput acceleration.**
+## 5. Throughput acceleration.
 <table style="width: 100%; border: none; border-collapse: collapse;">
   <tr>
     <td style="width: 50%; padding: 10px; border: none;">
@@ -372,7 +372,7 @@ To emphasize the pragmatic benefits of CORING, an experiment was meticulously co
 
 *Note*: For replication of this experiment, please refer to [detection/README.md](detection/README.md).
 
-# :bookmark_tabs: ToDo
+# :bookmark_tabs: Not-To-Do
 - [ ] Integrate other pruning techniques.
 - [ ] Clean code.
 
@@ -384,7 +384,7 @@ We warmly welcome your participation in our project!
 To contact us, never hesitate to contact [pvtien96@gmail.com](mailto:pvtien96@gmail.com).
 <br></br>
 
-# Citation
+# :bookmark: Citation
 If the code and paper help your research, please kindly cite:
 ```
 @misc{pham2023coring,
@@ -395,5 +395,5 @@ If the code and paper help your research, please kindly cite:
   }
 ```
 
-# Acknowledgement
+# :thumbsup: Acknowledgement
 Part of this repository is based on [HRankPlus](https://github.com/lmbxmu/HRankPlus/tree/master).
