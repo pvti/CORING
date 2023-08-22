@@ -30,7 +30,7 @@ def get_args_parser(add_help=True):
     parser.add_argument(
         "--output", default="output.mp4", help="Path to output video file"
     )
-    parser.add_argument("--fps", default=10, help="FPS to write output video")
+    parser.add_argument("--fps", type=int, default=10, help="FPS to write output video")
     parser.add_argument("--device", default="cuda:0", help="Device to use (cuda/cpu)")
 
     return parser
