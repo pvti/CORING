@@ -48,6 +48,7 @@
 
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
+* **2023.8.22:** Throughput acceleration :stars: experiment is released.
 * **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. Part of the project will be :mega: presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :clap:.
 * **2023.8.12:** Baseline and compressed checkpoints :gift: are released.
 
@@ -351,6 +352,23 @@ Time consumption to calculate the similarity matrix on VGG-16-BN. For tail layer
 
 A comprehensive ablation study on CIFAR-10, showcasing comparable final accuracies achieved with the 3 considered distances.
 
+5. **Throughput acceleration.**
+<div style="display: flex;">
+  <div style="flex: 50%; padding: 10px;">
+    <img src="assets/baseline.gif" alt="Baseline" width="100%">
+  </div>
+  <div style="flex: 50%; padding: 10px;">
+    <img src="assets/pruned.gif" alt="Pruned" width="100%">
+  </div>
+</div>
+
+<div align="center ">
+    Baseline (<em>left</em>) vs Pruned (<em>right</em>) model inference.
+</div>
+
+To emphasize the pragmatic benefits of CORING, an experiment was meticulously conducted comparing a baseline model and a compressed model, both tailored for object detection tasks. Specifically employing the FasterRCNN_ResNet50_FPN architecture on a Tesla T4 GPU, the experiment underscores the remarkable performance enhancement achieved by CORING. The accompanying GIFs provide a clear visual representation: the baseline model demonstrates an inference speed of approximately 7 FPS, while the CORING-compressed model exhibits a notable twofold acceleration in throughput. This compelling contrast aptly demonstrates CORING's efficacy and scalability, firmly establishing its aptness for diverse deployment scenarios.
+
+*Note*: For replication of this experiment, please refer to [detection/README.md](detection/README.md).
 
 # :bookmark_tabs: ToDo
 - [ ] Integrate other pruning techniques.
