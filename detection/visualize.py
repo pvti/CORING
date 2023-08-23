@@ -42,6 +42,13 @@ def main(args):
     weights = FasterRCNN_ResNet50_FPN_Weights.DEFAULT
     preprocess = weights.transforms()
     labels = weights.meta["categories"]
+    # Create a color map for each class
+    num_classes = len(labels)
+    color_map = {}
+    for i in range(num_classes):
+        color = (int(i * 255 / num_classes), 64, 128)
+        color_map[i] = color
+    color_map[1] = (0, 255, 0)  # make person green
 
     if args.custom:
         compress_rate = get_cpr(args.compress_rate)
@@ -94,8 +101,9 @@ def main(args):
             if score > 0.5:  # Adjust the confidence threshold as needed
                 box = [int(coord) for coord in box.tolist()]  # Convert to integers
                 class_name = labels[label]
+                color = color_map[label.item()]
                 frame = cv2.rectangle(
-                    frame, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 2
+                    frame, (box[0], box[1]), (box[2], box[3]), color, 2
                 )
                 text = f"{class_name}"
                 frame = cv2.putText(
@@ -104,7 +112,7 @@ def main(args):
                     (box[0], box[1] - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.5,
-                    (0, 255, 0),
+                    color,
                     2,
                 )
 
