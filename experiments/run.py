@@ -52,7 +52,7 @@ data_combined = np.vstack((initial_filters, closely_similar_filters))
 data_combined_2d = data_combined.reshape(data_combined.shape[0], -1)
 
 
-def run():
+def run(seed=0):
     # Apply custom K-means on the dataset
     centroids, labels, inertia_list, iter = custom_kmeans(
         data_combined,
@@ -60,6 +60,7 @@ def run():
         dist=args.distance,
         decomposer=args.method,
         rank=args.rank,
+        seed=seed,
     )
 
     inertia = min(inertia_list)
@@ -92,7 +93,7 @@ def main():
     inter_distances = []
 
     for i in tqdm(range(args.runs)):
-        inertia, silhouette, iter, intra_distance, inter_distance = run()
+        inertia, silhouette, iter, intra_distance, inter_distance = run(seed=i)
         wandb.log(
             {
                 "inertia": inertia,

@@ -62,9 +62,11 @@ def custom_kmeans(
     rank=1,
     max_iters=100,
     tolerance=1e-12,
+    seed=0,
 ):
+    random_state = np.random.RandomState(seed)
     # Randomly initialize the centroids from the data points
-    centroids_idx = np.random.choice(data.shape[0], num_clusters, replace=False)
+    centroids_idx = random_state.choice(data.shape[0], num_clusters, replace=False)
     centroids = data[centroids_idx]
 
     inertia_list = []
