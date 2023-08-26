@@ -49,7 +49,7 @@
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
 * **2023.8.22:** Throughput acceleration :stars: [experiment](#throughput-acceleration) is released :tada:.
-* **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. Part of the project will be :mega: presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :clap:.
+* **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. [Part of the project](https://gretsi.fr/data/colloque/pdf/2023_pham1312.pdf) will be :mega: presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :clap:.
 * **2023.8.12:** Baseline and compressed checkpoints :gift: are released.
 
 
