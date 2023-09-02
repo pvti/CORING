@@ -20,9 +20,17 @@ def get_u_svd(x, rank=1):
     return u[:, :rank]
 
 
+def svd(x, rank=1):
+    u, _, vh = torch.linalg.svd(x, full_matrices=False)
+    v = torch.transpose(vh, 0, 1)
+    factors = [u[:, :rank], v[:, :rank]]
+
+    return factors
+
+
 def decompose(x, decomposer="hosvd", rank=1, mode=0):
     """Get left_singulars based on decomposer and rank
-    svd: u
+    svd: [u, v]
     hosvd: [u1, u2, u3]
     tucker: [u1, u2, u3]
     """
@@ -39,9 +47,10 @@ def decompose(x, decomposer="hosvd", rank=1, mode=0):
             left_singular_i = get_u_svd(unfold_i, rank=rank)
             left_singulars.append(left_singular_i)
 
+        return left_singulars
+
     elif decomposer == "svd":
         unfold_mode = unfold(x, mode)
-        left_singular_i = get_u_svd(unfold_mode, rank=rank)
-        left_singulars = [left_singular_i]
+        factors = svd(unfold_mode, rank=rank)
 
-    return left_singulars
+        return factors
