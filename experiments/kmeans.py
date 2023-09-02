@@ -43,13 +43,14 @@ def compute_distance(x, y, dist="euclidean", decomposer="tensor", rank=1):
         y_factors = tensor_decompose(y, rank=rank)
 
     sum = 0.0
-    for i in range(len(x_factors)):
+    num_representation = len(x_factors)
+    for i in range(num_representation):
         if dist == "euclidean":
             sum += torch.dist(x_factors[i], y_factors[i])
         elif dist == "vbd":
             sum += VBD(x_factors[i], y_factors[i])
 
-    distance = sum.item() / 3
+    distance = sum.item() / num_representation
 
     return distance
 

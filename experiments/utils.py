@@ -9,8 +9,9 @@ tl.set_backend("pytorch")
 
 def svd(x, rank=1):
     x_unfold = unfold(x, 0)
-    u, _, _ = torch.linalg.svd(x_unfold, full_matrices=False)
-    factors = torch.unbind(u[:, :rank], dim=1)
+    u, _, vh = torch.linalg.svd(x_unfold, full_matrices=False)
+    v = torch.transpose(vh, 0, 1)
+    factors = [u[:, :rank], v[:, :rank]]
 
     return factors
 
