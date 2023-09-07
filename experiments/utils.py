@@ -1,16 +1,12 @@
-import torch
+import numpy as np
 import tensorly as tl
 from tensorly.decomposition import tucker
-from tensorly import unfold
-
-
-tl.set_backend("pytorch")
 
 
 def svd(x, rank=1):
-    x_unfold = unfold(x, 0)
-    u, _, vh = torch.linalg.svd(x_unfold, full_matrices=False)
-    v = torch.transpose(vh, 0, 1)
+    x_unfold = tl.unfold(x, 0)
+    u, _, vh = np.linalg.svd(x_unfold, full_matrices=False)
+    v = np.transpose(vh)
     factors = [u[:, :rank], v[:, :rank]]
 
     return factors
@@ -31,6 +27,6 @@ def tensor_decompose(x, rank=1):
 
 def VBD(a, b):
     """Caculate variance based distance"""
-    vbd = torch.var(a - b) / (torch.var(a) + torch.var(b))
+    vbd = np.var(a - b) / (np.var(a) + np.var(b))
 
     return vbd

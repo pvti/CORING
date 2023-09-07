@@ -2,8 +2,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
-import torch
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, adjusted_rand_score
 from utils import svd, tensor_decompose, VBD
 
 
@@ -34,21 +33,26 @@ def parse_args():
     return parser.parse_args()
 
 
-def compute_distance(x, y, dist="euclidean", decomposer="tensor", rank=1):
-    if decomposer == "matrix":
-        x_factors = svd(x, rank=rank)
-        y_factors = svd(y, rank=rank)
-    elif decomposer == "tensor":
-        x_factors = tensor_decompose(x, rank=rank)
-        y_factors = tensor_decompose(y, rank=rank)
+def decompose(data, method="tensor", rank=1):
+    representations = []
+    for d in data:
+        if method == "matrix":
+            factors = svd(d, rank=rank)
+        elif method == "tensor":
+            factors = tensor_decompose(d, rank=rank)
+        representations.append(factors)
 
+    return np.vstack(representations)
+
+
+def compute_distance(x, y, dist="euclidean"):
     sum = 0.0
-    num_representation = len(x_factors)
+    num_representation = len(x)
     for i in range(num_representation):
         if dist == "euclidean":
-            sum += torch.dist(x_factors[i], y_factors[i])
+            sum += np.linalg.norm(x[i] - y[i])
         elif dist == "vbd":
-            sum += VBD(x_factors[i], y_factors[i])
+            sum += VBD(x[i], y[i])
 
     distance = sum.item() / num_representation
 
@@ -57,10 +61,11 @@ def compute_distance(x, y, dist="euclidean", decomposer="tensor", rank=1):
 
 def custom_kmeans(
     data,
-    num_clusters,
-    dist="euclidean",
-    decomposer="tensor",
+    data_processed,
+    method="tensor",
     rank=1,
+    num_clusters=5,
+    dist="euclidean",
     max_iters=100,
     tolerance=1e-12,
     seed=0,
@@ -69,6 +74,8 @@ def custom_kmeans(
     # Randomly initialize the centroids from the data points
     centroids_idx = random_state.choice(data.shape[0], num_clusters, replace=False)
     centroids = data[centroids_idx]
+    # centroids = [data_processed[i] for i in centroids_idx]
+    centroids_processed = data_processed[centroids_idx]
 
     inertia_list = []
 
@@ -79,15 +86,13 @@ def custom_kmeans(
                 [
                     [
                         compute_distance(
-                            torch.tensor(d),
-                            torch.tensor(c),
+                            d,
+                            c,
                             dist=dist,
-                            decomposer=decomposer,
-                            rank=rank,
                         )
-                        for c in centroids
+                        for c in centroids_processed
                     ]
-                    for d in data
+                    for d in data_processed
                 ]
             ),
             axis=1,
@@ -112,6 +117,7 @@ def custom_kmeans(
             break
 
         centroids = new_centroids
+        centroids_processed = decompose(new_centroids, method=method, rank=rank)
 
     return centroids, labels, inertia_list, iter
 
@@ -149,14 +155,16 @@ if __name__ == "__main__":
 
     # Combine both initial_filters and closely_similar_filters
     data_combined = np.vstack((initial_filters, closely_similar_filters))
+    data_processed = decompose(data_combined, method=args.method, rank=args.rank)
 
     # Apply custom K-means on the dataset
     centroids, labels, inertia_list, iteration = custom_kmeans(
-        data_combined,
-        num_clusters,
-        dist=args.distance,
-        decomposer=args.method,
+        data=data_combined,
+        data_processed=data_processed,
+        method=args.method,
         rank=args.rank,
+        num_clusters=num_clusters,
+        dist=args.distance,
     )
 
     # Print the inertia list for each iteration
@@ -171,6 +179,14 @@ if __name__ == "__main__":
     except Exception:
         silhouette = 0
     print("silhouette_avg:", silhouette)
+
+    # Calculate ARI
+    num_similar_filters = closely_similar_filters.shape[0] // num_clusters
+    ground_truth = np.arange(num_clusters)
+    temp = np.repeat(ground_truth, num_similar_filters)
+    ground_truth = np.concatenate([ground_truth, temp])
+    ari = adjusted_rand_score(ground_truth, labels)
+    print("ARI:", ari)
 
     # Compute Intra Distance
     intra_distance = compute_intra_distance(centroids, data_combined, labels)
