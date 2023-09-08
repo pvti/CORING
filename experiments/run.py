@@ -20,16 +20,28 @@ def parse_args():
         "--satellites", type=int, default=100, help="number of satellites"
     )
     parser.add_argument(
-        "--clusters-std",
+        "--clusters_std_min",
         type=float,
         default=1.0,
-        help="cluster standard to control the distance among centroids",
+        help="min cluster standard to control the distance among centroids",
     )
     parser.add_argument(
-        "--noise-std",
+        "--clusters_std_max",
+        type=float,
+        default=2.0,
+        help="max cluster standard to control the distance among centroids",
+    )
+    parser.add_argument(
+        "--noise_std_min",
         type=float,
         default=0.1,
-        help="noise standard to control the distance between centroid and its satellites",
+        help="min noise standard to control the distance between centroid and its satellites",
+    )
+    parser.add_argument(
+        "--noise_std_max",
+        type=float,
+        default=0.5,
+        help="max noise standard to control the distance between centroid and its satellites",
     )
     parser.add_argument(
         "--distance",
@@ -102,8 +114,25 @@ def compute_std(x):
     return min, avg, max
 
 
+def topk_positions(x, y, k=10):
+    # Calculate mean values
+    x_mean = np.mean(x)
+    y_mean = np.mean(y)
+
+    # Calculate total_diff for each position
+    total_diff = np.abs(x - x_mean) + np.abs(y - y_mean)
+
+    # Get indices that would sort the total_diff array
+    sorted_indices = np.argsort(total_diff)
+
+    # Get the top k positions with the smallest total_diff
+    top_k_positions = sorted_indices[:k]
+
+    return top_k_positions
+
+
 def main():
-    name = f"{args.distance}_{args.rank}"
+    name = f"distance = {args.distance} rank = {args.rank} clusters-std = [{args.clusters_std_min} {args.clusters_std_max}] noise-std = [{args.noise_std_min} {args.noise_std_max}]"
     wandb.init(name=name, project=f"CORING_CustomKmeans", config=vars(args))
 
     ARIs_tensor = []
@@ -113,10 +142,10 @@ def main():
 
     for i in tqdm(range(args.runs)):
         # Create dataset
-        clusters_std = random.uniform(1.0, 2.0)
-        noise_std = random.uniform(0.1, 0.5)
+        clusters_std = random.uniform(args.clusters_std_min, args.clusters_std_max)
+        noise_std = random.uniform(args.noise_std_min, args.noise_std_max)
         print(
-            f"Dataset {i} created with (clusters_std, noise_std)=({clusters_std},{noise_std})"
+            f"Creating dataset {i} with (clusters_std, noise_std)=({clusters_std},{noise_std})"
         )
         initial_filters = create_random_centroids(
             args.centroids, filter_size, clusters_std
@@ -124,6 +153,7 @@ def main():
         closely_similar_filters = add_noise_to_centroids(
             initial_filters, args.satellites, noise_std
         )
+        np.save(f"{i}.npy", [initial_filters, closely_similar_filters])
 
         # Combine both initial_filters and closely_similar_filters
         data_combined = np.vstack((initial_filters, closely_similar_filters))
@@ -171,6 +201,13 @@ def main():
 
     print("ARI_mean_tensor", ARI_mean_tensor)
     print("ARI_mean_matrix", ARI_mean_matrix)
+    ARIs_tensor = np.array(ARIs_tensor)
+    ARIs_matrix = np.array(ARIs_matrix)
+    top_positions = topk_positions(ARIs_tensor, ARIs_matrix)
+    for i, position in enumerate(top_positions):
+        print(
+            f"Position {i + 1}: ARIs_tensor[{position}] = {ARIs_tensor[position]}, ARIs_matrix[{position}] = {ARIs_matrix[position]}"
+        )
 
 
 if __name__ == "__main__":
