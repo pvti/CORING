@@ -29,6 +29,7 @@ def parse_args():
         help="distance metric",
     )
     parser.add_argument("--rank", type=int, default=1, help="decomposition rank")
+    parser.add_argument("--seed", type=int, default=0, help="seed for random")
 
     return parser.parse_args()
 
@@ -165,6 +166,7 @@ if __name__ == "__main__":
         rank=args.rank,
         num_clusters=num_clusters,
         dist=args.distance,
+        seed=args.seed,
     )
 
     # Print the inertia list for each iteration
