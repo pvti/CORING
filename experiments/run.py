@@ -138,7 +138,7 @@ def main():
     name = f"distance = {args.distance} rank = {args.rank} clusters-std = [{args.clusters_std_min} {args.clusters_std_max}] noise-std = [{args.noise_std_min} {args.noise_std_max}]"
     wandb.init(name=name, project=f"CORING_CustomKmeans", config=vars(args))
     if not os.path.isdir(args.output):
-        os.makedirs(args.outputI)
+        os.makedirs(args.output)
 
     ARIs_tensor = []
     ARIs_matrix = []
