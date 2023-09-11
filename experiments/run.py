@@ -210,6 +210,7 @@ def main():
     _, ARI_mean_tensor, _ = compute_std(ARIs_tensor)
     _, ARI_mean_matrix, _ = compute_std(ARIs_matrix)
 
+    wandb.log({"ARI_mean_tensor": ARI_mean_tensor, "ARI_mean_matrix": ARI_mean_matrix})
     print("ARI_mean_tensor", ARI_mean_tensor)
     print("ARI_mean_matrix", ARI_mean_matrix)
     ARIs_tensor = np.array(ARIs_tensor)
@@ -217,7 +218,7 @@ def main():
     top_positions = topk_positions(ARIs_tensor, ARIs_matrix)
     for i, position in enumerate(top_positions):
         print(
-            f"Position {i + 1}: ARIs_tensor[{position}] = {ARIs_tensor[position]}, ARIs_matrix[{position}] = {ARIs_matrix[position]}, seed_tensor = {seed_tensor}, seed_matrix = {seed_matrix}"
+            f"Position {i + 1}: ARIs_tensor[{position}] = {ARIs_tensor[position]}, ARIs_matrix[{position}] = {ARIs_matrix[position]}, seed_tensor = {seeds_tensor[position]}, seed_matrix = {seeds_matrix[position]}"
         )
 
 
