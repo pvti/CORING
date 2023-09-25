@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 stage_repeat = [3, 4, 6, 3]
@@ -163,17 +164,13 @@ class ResNet50(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
 
-        for i, block in enumerate(self.layer1):
-            x = block(x)
-        for i, block in enumerate(self.layer2):
-            x = block(x)
-        for i, block in enumerate(self.layer3):
-            x = block(x)
-        for i, block in enumerate(self.layer4):
-            x = block(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
 
         x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
+        x = torch.flatten(x, 1)
         x = self.fc(x)
 
         return x
