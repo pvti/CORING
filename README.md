@@ -48,6 +48,7 @@
 
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
+* **2023.10.02:** Efficacy :fast_forward: [study](#kmeans) is added.
 * **2023.8.22:** Throughput acceleration :stars: [experiment](#throughput-acceleration) is released :tada:.
 * **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. [Part of the project](https://gretsi.fr/data/colloque/pdf/2023_pham1312.pdf) will be :mega: presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :clap:.
 * **2023.8.12:** Baseline and compressed checkpoints :gift: are released.
@@ -371,6 +372,9 @@ A comprehensive ablation study on CIFAR-10, showcasing comparable final accuraci
 To emphasize the pragmatic benefits of CORING, an experiment was meticulously conducted comparing a baseline model and a compressed model, both tailored for object detection tasks. Specifically employing the FasterRCNN_ResNet50_FPN architecture on a Tesla T4 GPU, the experiment underscores the remarkable performance enhancement achieved by CORING. The accompanying GIFs provide a clear visual representation: the baseline model demonstrates an inference speed of approximately 7 FPS, while the CORING-compressed model exhibits a notable twofold acceleration in throughput. This compelling contrast aptly demonstrates CORING's efficacy and scalability, firmly establishing its aptness for diverse deployment scenarios.
 
 *Note*: For replication of this experiment, please refer to [detection/README.md](detection/README.md).
+
+## 6. Comparative efficacy study. <a name="kmeans"></a>
+For a detailed evaluation of CORING's performance, including experiments, results, and visualizations, please refer to the [efficacy study](./experiments/README.md).
 
 # :bookmark_tabs: Not-To-Do
 - [ ] Integrate other pruning techniques.
