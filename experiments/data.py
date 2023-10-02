@@ -86,7 +86,7 @@ def main():
     colors = plt.cm.tab10(np.linspace(0, 1, args.centroids))
 
     # Plot the points in a 2D plane with different colors for each centroid
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(8, 6), dpi=300)
     for i in range(args.centroids):
         # Plot the closely similar filters of the current centroid (cluster)
         plt.scatter(
@@ -109,15 +109,15 @@ def main():
     )
 
     # Set plot labels and title
-    plt.xlabel("Principal Component 1")
-    plt.ylabel("Principal Component 2")
-    plt.title("2D PCA Projection. Ground truth")
+    # plt.xlabel("Principal Component 1")
+    # plt.ylabel("Principal Component 2")
+    # plt.title(f"Ground truth: {args.data}")
 
     # Add legend
-    plt.legend()
+    plt.legend(prop = { "size": 14 })
 
     # Set aspect ratio to equal and grid on
-    plt.axis("equal")
+    # plt.axis("equal")
     plt.grid(True)
     plt.show()
 

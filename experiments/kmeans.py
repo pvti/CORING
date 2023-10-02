@@ -209,7 +209,7 @@ if __name__ == "__main__":
     colors = plt.cm.tab10(np.linspace(0, 1, num_clusters))
 
     # Plot the points in a 2D plane with different colors for each cluster
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(8, 6), dpi=300)
     for i in range(num_clusters):
         plt.scatter(
             pca_result[labels == i, 0],
@@ -230,16 +230,16 @@ if __name__ == "__main__":
     )
 
     # Set plot labels and title
-    plt.xlabel("Principal Component 1")
-    plt.ylabel("Principal Component 2")
-    plt.title(
-        f"data = {args.data}; method = {args.method}; distance = {args.distance}; rank = {args.rank}"
-    )
+    # plt.xlabel("Principal Component 1")
+    # plt.ylabel("Principal Component 2")
+    # plt.title(
+    #     f"data = {args.data}; method = {args.method}; ARI = {ari}"
+    # )
 
     # Add legend
-    plt.legend()
+    # plt.legend(prop = { "size": 13 })
 
     # Set aspect ratio to equal and grid on
-    plt.axis("equal")
+    # plt.axis("equal")
     plt.grid(True)
     plt.show()
