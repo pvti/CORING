@@ -47,7 +47,7 @@ Table 1: ARI of the tensor-based and matrix-based method
 
 We have included representative datasets based on the ARI of predictions that closely align with the mean ARI across the entire dataset (3 scenarios, each containing 1000 datasets). These representative datasets are employed to illustrate typical outcomes of both methods, as presented in Table 2.
 
-### Table 2: Visualizing the performance of tensor-based and matrix-based methods
+Table 2: Visualizing the performance of tensor-based and matrix-based methods
 
 |   | Groundtruth | Matrix  | Tensor  |
 |---|:-------------:|:------------------:|:------------------:|
