@@ -359,10 +359,10 @@ A comprehensive ablation study on CIFAR-10, showcasing comparable final accuraci
 <table style="width: 100%; border: none; border-collapse: collapse;">
   <tr>
     <td style="width: 50%; padding: 10px; border: none;">
-      <img src="assets/baseline.gif" alt="Baseline" style="width: 100%;">
+      <img src="assets/baseline_fast.gif" alt="Baseline" style="width: 100%;">
     </td>
     <td style="width: 50%; padding: 10px; border: none;">
-      <img src="assets/pruned.gif" alt="Pruned" style="width: 100%;">
+      <img src="assets/pruned_fast.gif" alt="Pruned" style="width: 100%;">
     </td>
   </tr>
 </table>
