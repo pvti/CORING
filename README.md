@@ -48,6 +48,7 @@
 
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
+* **2023.10.31:** Add instance segmentation and keypoint detection [visualization](#throughput-acceleration) :horse_racing:.
 * **2023.10.02:** Efficacy :fast_forward: [study](#kmeans) is added.
 * **2023.8.22:** Throughput acceleration :stars: [experiment](#throughput-acceleration) is released :tada:.
 * **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. [Part of the project](https://gretsi.fr/data/colloque/pdf/2023_pham1312.pdf) will be :mega: presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :clap:.
@@ -354,6 +355,7 @@ Time consumption to calculate the similarity matrix on VGG-16-BN. For tail layer
 A comprehensive ablation study on CIFAR-10, showcasing comparable final accuracies achieved with the 3 considered distances.
 
 ## 5. Throughput acceleration. <a name="throughput-acceleration"></a>
++ FasterRCNN for object detection
 <table style="width: 100%; border: none; border-collapse: collapse;">
   <tr>
     <td style="width: 50%; padding: 10px; border: none;">
@@ -361,6 +363,30 @@ A comprehensive ablation study on CIFAR-10, showcasing comparable final accuraci
     </td>
     <td style="width: 50%; padding: 10px; border: none;">
       <img src="assets/pruned.gif" alt="Pruned" style="width: 100%;">
+    </td>
+  </tr>
+</table>
+
++ MaskRCNN for instance segmentation
+<table style="width: 100%; border: none; border-collapse: collapse;">
+  <tr>
+    <td style="width: 50%; padding: 10px; border: none;">
+      <img src="assets/baseline_mask.gif" alt="Baseline" style="width: 100%;">
+    </td>
+    <td style="width: 50%; padding: 10px; border: none;">
+      <img src="assets/pruned_mask.gif" alt="Pruned" style="width: 100%;">
+    </td>
+  </tr>
+</table>
+
++ KeypointRCNN for human keypoint detection
+<table style="width: 100%; border: none; border-collapse: collapse;">
+  <tr>
+    <td style="width: 50%; padding: 10px; border: none;">
+      <img src="assets/baseline_keypoint.gif" alt="Baseline" style="width: 100%;">
+    </td>
+    <td style="width: 50%; padding: 10px; border: none;">
+      <img src="assets/pruned_keypoint.gif" alt="Pruned" style="width: 100%;">
     </td>
   </tr>
 </table>
