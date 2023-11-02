@@ -238,6 +238,8 @@ if __name__ == "__main__":
 
     # Add legend
     # plt.legend(prop = { "size": 13 })
+    plt.xticks(fontsize=13)
+    plt.yticks(fontsize=13)
 
     # Set aspect ratio to equal and grid on
     # plt.axis("equal")

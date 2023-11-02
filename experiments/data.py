@@ -115,6 +115,8 @@ def main():
 
     # Add legend
     plt.legend(prop = { "size": 14 })
+    plt.xticks(fontsize=13)
+    plt.yticks(fontsize=13)
 
     # Set aspect ratio to equal and grid on
     # plt.axis("equal")
