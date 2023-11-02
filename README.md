@@ -48,7 +48,7 @@
 
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
-* **2023.10.31:** Add instance segmentation and keypoint detection [visualization](#throughput-acceleration) :horse_racing:.
+* **2023.11.02:** Add instance segmentation and keypoint detection [visualization](#throughput-acceleration) :horse_racing:.
 * **2023.10.02:** Efficacy :fast_forward: [study](#kmeans) is added.
 * **2023.8.22:** Throughput acceleration :stars: [experiment](#throughput-acceleration) is released :tada:.
 * **2023.8.14:** [Poster](assets/poster.pdf) :bar_chart: is released. [Part of the project](https://gretsi.fr/data/colloque/pdf/2023_pham1312.pdf) will be :mega: presented at [GRETSI'23](https://gretsi.fr/colloque2023/) :clap:.
