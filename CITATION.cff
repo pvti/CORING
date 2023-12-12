@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: If you find this work useful, please consider citing it.
+authors:
+- family-names: Pham
+  given-names: Van Tien
+  orcid: https://orcid.org/0000-0003-3890-7188
+- family-names: Zniyed
+  given-names: Yassine
+- family-names: Nguyen
+  given-names:  Thanh Phuong
+title: Efficient tensor-based filter pruning
+version: 0.1.0
+date-released: 2023-08-23
+url: https://github.com/pvtien96/CORING
+preferred-citation:
+  type: misc
+  authors:
+  - family-names: Pham
+    given-names: Van Tien
+    orcid: https://orcid.org/0000-0003-3890-7188
+  - family-names: Zniyed
+    given-names: Yassine
+  - family-names: Nguyen
+    given-names:  Thanh Phuong
+  title: Efficient tensor-based filter pruning
+  year: 2023
