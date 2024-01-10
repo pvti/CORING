@@ -278,9 +278,9 @@ pip install torch tensorly numpy thop ptflops
 ```
 
 # :unlock: Verification of our results
-  Please download the [checkpoints](https://drive.google.com/drive/folders/1UfDCJ2x-Tp-4m51AfuTie_gV2N-YNYTl?usp=sharing) and evaluate their performance with the corresponding script and dataset.
+  Please download the [checkpoints](https://github.com/pvtien96/CORING/releases/tag/v0.1.0) and evaluate their performance with the corresponding script and dataset.
 
-- All results are available [here](https://drive.google.com/drive/folders/1UfDCJ2x-Tp-4m51AfuTie_gV2N-YNYTl?usp=sharing).
+- All results are available [here](https://github.com/pvtien96/CORING/releases/tag/v0.1.0).
 
   <details>
 
