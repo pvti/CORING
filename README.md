@@ -48,6 +48,7 @@
 
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
+* **2024.01.24:** Update ablation studies on metrics [metrics](#metrics) 📊 and [$K$-shots](#KShots) 🔁.
 * **2023.11.02:** Add instance segmentation and keypoint detection [visualization](#throughput-acceleration) :horse_racing:.
 * **2023.10.02:** Efficacy :fast_forward: [study](#kmeans) is added.
 * **2023.8.22:** Throughput acceleration :stars: [experiment](#throughput-acceleration) is released :tada:.
@@ -347,14 +348,14 @@ With shortcut connection architecture, the input and output of each residual blo
 
 Time consumption to calculate the similarity matrix on VGG-16-BN. For tail layers that contain a larger number of filters, the tensor decomposition method is obviously more efficient.
 
-## 4. Criteria comparison.
+## 4. Criteria comparison <a name="metrics"></a>
 <p align="center" width="100%">
-    <img src="assets\criteria_comparison.png" width="50%" height="50%">
+    <img src="assets\criteria_comparison.png" width="75%" height="50%">
 </p>
 
-A comprehensive ablation study on CIFAR-10, showcasing comparable final accuracies achieved with the 3 considered distances.
+The influence of distance metrics on model accuracy for different architectures and datasets.
 
-## 5. Throughput acceleration. <a name="throughput-acceleration"></a>
+## 5. Throughput acceleration <a name="throughput-acceleration"></a>
 + FasterRCNN for object detection
 <table style="width: 100%; border: none; border-collapse: collapse;">
   <tr>
@@ -399,8 +400,15 @@ To emphasize the pragmatic benefits of CORING, an experiment was meticulously co
 
 *Note*: For replication of this experiment, please refer to [detection/README.md](detection/README.md).
 
-## 6. Comparative efficacy study. <a name="kmeans"></a>
+## 6. Comparative efficacy study <a name="kmeans"></a>
 For a detailed evaluation of CORING's performance, including experiments, results, and visualizations, please refer to the [efficacy study](./experiments/README.md).
+
+## 7. $K$-shots analysis  <a name="KShots"></a>
+<p align="center" width="100%">
+    <img src="assets\KShots.png" width="100%" height="50%">
+</p>
+
+The influence of $K$, the number of shots, on model accuracy for different architectures and datasets.
 
 # :bookmark_tabs: Not-To-Do
 - [ ] Integrate other pruning techniques.
