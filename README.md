@@ -14,7 +14,7 @@
         Like ResNet-50 in ImageNet's vast domain,<br>
         Memory and computation requirements it does restrain.<br>
         Efficiency elevated, generalization takes its flight,<br>
-        In the world of neural networks, C:ring:RING shines its light."
+        In the world of neural networks, C💍RING shines its light."
     </em>
 </div>
 
