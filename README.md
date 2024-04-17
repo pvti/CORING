@@ -427,7 +427,7 @@ If the code and paper help your research, please kindly cite:
 ```
 @misc{pham2023coring,
     title={Efficient tensor decomposition-based filter pruning}, 
-    author={Van Tien, Pham and Yassine, Zniyed and Thanh Phuong, Nguyen},
+    author={Pham, Van Tien and Zniyed, Yassine and Nguyen, Thanh Phuong},
     year={2023},
     howpublished={\url{https://github.com/pvtien96/CORING}},
   }
