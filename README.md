@@ -434,4 +434,7 @@ If the code and paper help your research, please kindly cite:
 ```
 
 # :thumbsup: Acknowledgement
+This work was granted access to the <a href="http://www.idris.fr/eng/jean-zay/jean-zay-presentation-eng.html">HPC resources of IDRIS</a> under the
+allocation 2023-103147 made by <a href="https://genci.fr/">GENCI</a>.  
+The work of T.P. Nguyen is partially supported by <a href="https://anr.fr/Projet-ANR-21-ASRO-0003">ANR ASTRID ROV-Chasseur</a>.  
 Part of this repository is based on [HRankPlus](https://github.com/lmbxmu/HRankPlus/tree/master).
