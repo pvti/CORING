@@ -48,6 +48,7 @@
 
 # :star2: News
 Project is under development :construction_worker:. Please stay tuned for more :fire: updates.
+* **2024.05.15:** Paper accepted by Neural Networks :innocent:. Preprint available [here](https://hal.science/hal-04577465).
 * **2024.01.24:** Update ablation studies on metrics [metrics](#metrics) 📊 and [Kshots](#KShots) 🔁.
 * **2023.11.02:** Add instance segmentation and keypoint detection [visualization](#throughput-acceleration) :horse_racing:.
 * **2023.10.02:** Efficacy :fast_forward: [study](#kmeans) is added.
