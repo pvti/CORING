@@ -8,12 +8,12 @@ authors:
   given-names: Yassine
 - family-names: Nguyen
   given-names:  Thanh Phuong
-title: Efficient tensor-based filter pruning
+title: Efficient tensor decomposition-based filter pruning
 version: 0.1.0
 date-released: 2023-08-23
 url: https://github.com/pvtien96/CORING
 preferred-citation:
-  type: misc
+  type: article
   authors:
   - family-names: Pham
     given-names: Van Tien
@@ -22,5 +22,7 @@ preferred-citation:
     given-names: Yassine
   - family-names: Nguyen
     given-names:  Thanh Phuong
-  title: Efficient tensor-based filter pruning
-  year: 2023
+  doi: https://doi.org/10.1016/j.neunet.2024.106393
+  journal: Neural Networks
+  title: Efficient tensor decomposition-based filter pruning
+  year: 2024

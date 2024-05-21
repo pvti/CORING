@@ -23,7 +23,7 @@
 ![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fpvtien96%2FSNRPruning&countColor=%23263759)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# :ring: Efficient tensor-based filter pruning
+# :ring: Efficient tensor decomposition-based filter pruning
 <div>
 <div align="center">
     <a href='https://github.com/pvtien96' target='_blank'>Van Tien PHAM<sup>1,&#x2709</sup></a>&emsp;
@@ -426,11 +426,11 @@ To contact us, never hesitate to contact [pvtien96@gmail.com](mailto:pvtien96@gm
 # :bookmark: Citation
 If the code and paper help your research, please kindly cite:
 ```
-@misc{pham2023coring,
-    title={Efficient tensor decomposition-based filter pruning}, 
+@article{pham2024efficient,
+    title={Efficient tensor decomposition-based filter pruning},
+    journal={Neural Networks},
     author={Pham, Van Tien and Zniyed, Yassine and Nguyen, Thanh Phuong},
-    year={2023},
-    howpublished={\url{https://github.com/pvtien96/CORING}},
+    year={2024},
   }
 ```
 
