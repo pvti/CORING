@@ -20,13 +20,13 @@
 
 
 -----------------
-![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fpvtien96%2FSNRPruning&countColor=%23263759)
+![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fpvti%2FSNRPruning&countColor=%23263759)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # :ring: Efficient tensor decomposition-based filter pruning
 <div>
 <div align="center">
-    <a href='https://github.com/pvtien96' target='_blank'>Van Tien PHAM<sup>1,&#x2709</sup></a>&emsp;
+    <a href='https://github.com/pvti' target='_blank'>Van Tien PHAM<sup>1,&#x2709</sup></a>&emsp;
     <a href='https://yzniyed.blogspot.com/p/about-me.html' target='_blank'>Yassine ZNIYED<sup>1</sup></a>&emsp;
     <a href='http://tpnguyen.univ-tln.fr/' target='_blank'>Thanh Phuong NGUYEN<sup>1</sup></a>&emsp;
 </div>
@@ -280,9 +280,9 @@ pip install torch tensorly numpy thop ptflops
 ```
 
 # :unlock: Verification of our results
-  Please download the [checkpoints](https://github.com/pvtien96/CORING/releases/tag/v0.1.0) and evaluate their performance with the corresponding script and dataset.
+  Please download the [checkpoints](https://github.com/pvti/CORING/releases/tag/v0.1.0) and evaluate their performance with the corresponding script and dataset.
 
-- All results are available [here](https://github.com/pvtien96/CORING/releases/tag/v0.1.0).
+- All results are available [here](https://github.com/pvti/CORING/releases/tag/v0.1.0).
 
   <details>
 
@@ -420,7 +420,7 @@ The influence of $K$, the number of shots, on model accuracy for different archi
 
 We warmly welcome your participation in our project!
 
-To contact us, never hesitate to contact [pvtien96@gmail.com](mailto:pvtien96@gmail.com).
+To contact us, never hesitate to contact [pvti@gmail.com](mailto:pvti@gmail.com).
 <br></br>
 
 # :bookmark: Citation
